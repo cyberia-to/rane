@@ -1,0 +1,35 @@
+[package]
+name = "ane"
+version = "0.1.0"
+edition = "2021"
+description = "Pure Rust access to Apple Neural Engine — compile MIL, load, run on ANE hardware"
+
+[lib]
+name = "ane"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ane_probe"
+path = "src/main.rs"
+
+[[example]]
+name = "matmul"
+path = "examples/matmul.rs"
+
+[[example]]
+name = "infer"
+path = "examples/infer.rs"
+
+[[example]]
+name = "compile_kernels"
+path = "examples/compile_kernels.rs"
+
+[[example]]
+name = "train"
+path = "examples/train.rs"
+
+[[example]]
+name = "bench"
+path = "examples/bench.rs"
+
+[dependencies]
