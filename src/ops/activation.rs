@@ -14,7 +14,14 @@ pub fn silu_backward(dsilu: f32, x: f32) -> f32 {
 
 /// GQA tile: expand KV_DIM → Q_DIM by duplicating KV heads
 /// input: [kv_dim, seq], output: [q_dim, seq]
-pub fn gqa_tile_kv(out: &mut [f32], input: &[f32], kv_heads: usize, gqa_ratio: usize, hd: usize, seq: usize) {
+pub fn gqa_tile_kv(
+    out: &mut [f32],
+    input: &[f32],
+    kv_heads: usize,
+    gqa_ratio: usize,
+    hd: usize,
+    seq: usize,
+) {
     for kv in 0..kv_heads {
         for r in 0..gqa_ratio {
             let q_head = kv * gqa_ratio + r;
@@ -27,7 +34,14 @@ pub fn gqa_tile_kv(out: &mut [f32], input: &[f32], kv_heads: usize, gqa_ratio: u
 
 /// GQA reduce: sum Q_DIM → KV_DIM gradients
 /// input: [q_dim, seq], output: [kv_dim, seq]
-pub fn gqa_reduce_kv(out: &mut [f32], input: &[f32], kv_heads: usize, gqa_ratio: usize, hd: usize, seq: usize) {
+pub fn gqa_reduce_kv(
+    out: &mut [f32],
+    input: &[f32],
+    kv_heads: usize,
+    gqa_ratio: usize,
+    hd: usize,
+    seq: usize,
+) {
     out.iter_mut().for_each(|v| *v = 0.0);
     for kv in 0..kv_heads {
         for r in 0..gqa_ratio {
@@ -40,10 +54,18 @@ pub fn gqa_reduce_kv(out: &mut [f32], input: &[f32], kv_heads: usize, gqa_ratio:
 }
 
 /// Compute logits: x_final[dim] @ embed[vocab, dim]^T → logits[vocab]
-pub fn compute_logits(logits: &mut [f32], x_final: &[f32], embed: &[f32], vocab: usize, dim: usize) {
+pub fn compute_logits(
+    logits: &mut [f32],
+    x_final: &[f32],
+    embed: &[f32],
+    vocab: usize,
+    dim: usize,
+) {
     for v in 0..vocab {
         let mut dot = 0.0f32;
-        for d in 0..dim { dot += x_final[d] * embed[v * dim + d]; }
+        for d in 0..dim {
+            dot += x_final[d] * embed[v * dim + d];
+        }
         logits[v] = dot;
     }
 }

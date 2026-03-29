@@ -1,9 +1,9 @@
 //! SDPA (Scaled Dot-Product Attention) MIL kernels
 //! Full port of gen_sdpa_fwd_dynamic, gen_sdpa_bwd1_noweight, gen_sdpa_bwd2
 
+use super::{build_weight_blob, mil_footer, mil_header, MilProgram};
 use crate::config::ModelConfig;
 use crate::surface::f32_to_fp16;
-use super::{MilProgram, mil_header, mil_footer, build_weight_blob};
 
 /// Generate causal mask blob: mask[t,t2] = 0 if t2<=t, -65504 otherwise
 pub fn causal_mask_blob(seq: usize) -> Vec<u8> {
@@ -48,8 +48,14 @@ pub fn rope_sin_blob(seq: usize, hd: usize) -> Vec<u8> {
 pub fn sdpa_fwd_weights(cfg: &ModelConfig) -> Vec<(&'static str, Vec<u8>)> {
     vec![
         ("@model_path/weights/mask.bin", causal_mask_blob(cfg.seq)),
-        ("@model_path/weights/rope_cos.bin", rope_cos_blob(cfg.seq, cfg.hd)),
-        ("@model_path/weights/rope_sin.bin", rope_sin_blob(cfg.seq, cfg.hd)),
+        (
+            "@model_path/weights/rope_cos.bin",
+            rope_cos_blob(cfg.seq, cfg.hd),
+        ),
+        (
+            "@model_path/weights/rope_sin.bin",
+            rope_sin_blob(cfg.seq, cfg.hd),
+        ),
     ]
 }
 
@@ -80,7 +86,7 @@ pub fn sdpa_fwd(cfg: &ModelConfig) -> MilProgram {
     let mut m = mil_header(dim, sp);
 
     // Slice xnorm, Wq, Wk, Wv from input
-    m += &format!("        tensor<int32, [4]> bx = const()[name=string(\"bx\"), val=tensor<int32, [4]>([0,0,0,0])];\n");
+    m += "        tensor<int32, [4]> bx = const()[name=string(\"bx\"), val=tensor<int32, [4]>([0,0,0,0])];\n";
     m += &format!("        tensor<int32, [4]> sx = const()[name=string(\"sx\"), val=tensor<int32, [4]>([1,{dim},1,{seq}])];\n");
     m += &format!("        tensor<fp16, [1,{dim},1,{seq}]> xn = slice_by_size(x=x,begin=bx,size=sx)[name=string(\"xn\")];\n");
 
@@ -208,7 +214,13 @@ pub fn sdpa_fwd(cfg: &ModelConfig) -> MilProgram {
     m += &format!("        tensor<fp16, [1,{out_ch},1,{seq}]> out = concat(axis=cax,interleave=cid,values=(af,qrf,krf,vf,xn))[name=string(\"cat\")];\n");
     m += &mil_footer("out");
 
-    MilProgram { text: m, input_channels: dim, input_spatial: sp, output_channels: out_ch, output_spatial: seq }
+    MilProgram {
+        text: m,
+        input_channels: dim,
+        input_spatial: sp,
+        output_channels: out_ch,
+        output_spatial: seq,
+    }
 }
 
 /// SDPA backward part 1: recompute attention + dV, dp
@@ -240,7 +252,12 @@ pub fn sdpa_bwd1(cfg: &ModelConfig) -> MilProgram {
     // Reshape to heads
     m += &format!("        tensor<int32, [4]> rsh = const()[name=string(\"rsh\"), val=tensor<int32, [4]>([1,{heads},{hd},{seq}])];\n");
     m += "        tensor<int32, [4]> pm = const()[name=string(\"pm\"), val=tensor<int32, [4]>([0,1,3,2])];\n";
-    for (src, dst_r, dst_t) in [("qf","qr","q"), ("kf","kr","k"), ("vf","vr","v"), ("da","dr","dat")] {
+    for (src, dst_r, dst_t) in [
+        ("qf", "qr", "q"),
+        ("kf", "kr", "k"),
+        ("vf", "vr", "v"),
+        ("da", "dr", "dat"),
+    ] {
         m += &format!("        tensor<fp16, [1,{heads},{hd},{seq}]> {dst_r} = reshape(shape=rsh,x={src})[name=string(\"r{dst_r}\")];\n");
         m += &format!("        tensor<fp16, [1,{heads},{seq},{hd}]> {dst_t} = transpose(perm=pm,x={dst_r})[name=string(\"t{dst_t}\")];\n");
     }
@@ -273,7 +290,13 @@ pub fn sdpa_bwd1(cfg: &ModelConfig) -> MilProgram {
     m += &format!("        tensor<fp16, [1,{out_ch},1,{seq}]> out = concat(axis=cax,interleave=cid,values=(dvf,pf,dpf))[name=string(\"cat\")];\n");
     m += &mil_footer("out");
 
-    MilProgram { text: m, input_channels: in_ch, input_spatial: seq, output_channels: out_ch, output_spatial: seq }
+    MilProgram {
+        text: m,
+        input_channels: in_ch,
+        input_spatial: seq,
+        output_channels: out_ch,
+        output_spatial: seq,
+    }
 }
 
 /// SDPA backward part 2: softmax backward + dQ, dK
@@ -342,5 +365,11 @@ pub fn sdpa_bwd2(cfg: &ModelConfig) -> MilProgram {
     m += &format!("        tensor<fp16, [1,{out_ch},1,{seq}]> out = concat(axis=cax,interleave=cid,values=(dqf,dkf))[name=string(\"cat\")];\n");
     m += &mil_footer("out");
 
-    MilProgram { text: m, input_channels: in_ch, input_spatial: seq, output_channels: out_ch, output_spatial: seq }
+    MilProgram {
+        text: m,
+        input_channels: in_ch,
+        input_spatial: seq,
+        output_channels: out_ch,
+        output_spatial: seq,
+    }
 }

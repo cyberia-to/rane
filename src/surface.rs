@@ -1,5 +1,7 @@
 //! IOSurface wrapper for ANE tensor I/O
 
+#![allow(dead_code)]
+
 use crate::ffi::*;
 use crate::AneError;
 use std::ffi::c_void;
@@ -17,19 +19,28 @@ impl AneSurface {
     pub fn new(bytes: usize) -> Result<Self, AneError> {
         unsafe {
             let dict = CFDictionaryCreateMutable(
-                ptr::null(), 0,
+                ptr::null(),
+                0,
                 &kCFTypeDictionaryKeyCallBacks as *const c_void,
                 &kCFTypeDictionaryValueCallBacks as *const c_void,
             );
             CFDictionarySetValue(dict, cf_str("IOSurfaceWidth") as _, cf_num(bytes as i32));
             CFDictionarySetValue(dict, cf_str("IOSurfaceHeight") as _, cf_num(1));
             CFDictionarySetValue(dict, cf_str("IOSurfaceBytesPerElement") as _, cf_num(1));
-            CFDictionarySetValue(dict, cf_str("IOSurfaceBytesPerRow") as _, cf_num(bytes as i32));
-            CFDictionarySetValue(dict, cf_str("IOSurfaceAllocSize") as _, cf_num(bytes as i32));
+            CFDictionarySetValue(
+                dict,
+                cf_str("IOSurfaceBytesPerRow") as _,
+                cf_num(bytes as i32),
+            );
+            CFDictionarySetValue(
+                dict,
+                cf_str("IOSurfaceAllocSize") as _,
+                cf_num(bytes as i32),
+            );
             CFDictionarySetValue(dict, cf_str("IOSurfacePixelFormat") as _, cf_num(0));
             let raw = IOSurfaceCreate(dict);
             if raw.is_null() {
-                return Err(AneError::SurfaceCreationFailed);
+                return Err(AneError::SurfaceCreationFailed(format!("{} bytes", bytes)));
             }
             let size = IOSurfaceGetAllocSize(raw);
             Ok(AneSurface { raw, size })
@@ -43,7 +54,9 @@ impl AneSurface {
 
     /// Lock surface, call closure with mutable fp16 slice, unlock.
     pub fn with_data_mut<F, R>(&self, f: F) -> R
-    where F: FnOnce(&mut [u16]) -> R {
+    where
+        F: FnOnce(&mut [u16]) -> R,
+    {
         unsafe {
             IOSurfaceLock(self.raw, 0, ptr::null_mut());
             let base = IOSurfaceGetBaseAddress(self.raw) as *mut u16;
@@ -57,7 +70,9 @@ impl AneSurface {
 
     /// Lock surface (read-only), call closure with fp16 slice, unlock.
     pub fn with_data<F, R>(&self, f: F) -> R
-    where F: FnOnce(&[u16]) -> R {
+    where
+        F: FnOnce(&[u16]) -> R,
+    {
         unsafe {
             IOSurfaceLock(self.raw, 1, ptr::null_mut()); // kIOSurfaceLockReadOnly = 1
             let base = IOSurfaceGetBaseAddress(self.raw) as *const u16;
@@ -87,7 +102,9 @@ impl AneSurface {
 
 impl Drop for AneSurface {
     fn drop(&mut self) {
-        unsafe { CFRelease(self.raw as CFTypeRef); }
+        unsafe {
+            CFRelease(self.raw as CFTypeRef);
+        }
     }
 }
 
@@ -110,7 +127,9 @@ pub fn fp16_to_f32(v: u16) -> f32 {
         f32::from_bits(result as u32)
     }
     #[cfg(not(target_arch = "aarch64"))]
-    { fp16_to_f32_soft(v) }
+    {
+        fp16_to_f32_soft(v)
+    }
 }
 
 /// Encode f32 to fp16 — NEON fcvt on aarch64
@@ -132,7 +151,9 @@ pub fn f32_to_fp16(v: f32) -> u16 {
         result as u16
     }
     #[cfg(not(target_arch = "aarch64"))]
-    { f32_to_fp16_soft(v) }
+    {
+        f32_to_fp16_soft(v)
+    }
 }
 
 /// Bulk convert fp16 → f32 using inline NEON assembly (8 at a time)
@@ -155,10 +176,16 @@ pub fn cvt_f16_f32(dst: &mut [f32], src: &[u16]) {
             }
             i += 8;
         }
-        for j in i..n { dst[j] = fp16_to_f32(src[j]); }
+        for j in i..n {
+            dst[j] = fp16_to_f32(src[j]);
+        }
     }
     #[cfg(not(target_arch = "aarch64"))]
-    { for i in 0..n { dst[i] = fp16_to_f32_soft(src[i]); } }
+    {
+        for i in 0..n {
+            dst[i] = fp16_to_f32_soft(src[i]);
+        }
+    }
 }
 
 /// Bulk convert f32 → fp16 using inline NEON assembly (8 at a time)
@@ -181,10 +208,16 @@ pub fn cvt_f32_f16(dst: &mut [u16], src: &[f32]) {
             }
             i += 8;
         }
-        for j in i..n { dst[j] = f32_to_fp16(src[j]); }
+        for j in i..n {
+            dst[j] = f32_to_fp16(src[j]);
+        }
     }
     #[cfg(not(target_arch = "aarch64"))]
-    { for i in 0..n { dst[i] = f32_to_fp16_soft(src[i]); } }
+    {
+        for i in 0..n {
+            dst[i] = f32_to_fp16_soft(src[i]);
+        }
+    }
 }
 
 fn fp16_to_f32_soft(v: u16) -> f32 {
@@ -194,7 +227,11 @@ fn fp16_to_f32_soft(v: u16) -> f32 {
     if exp == 0 {
         ((-1.0f32).powi(sign as i32)) * (frac as f32 / 1024.0) * 2.0f32.powi(-14)
     } else if exp == 31 {
-        if frac == 0 { f32::INFINITY } else { f32::NAN }
+        if frac == 0 {
+            f32::INFINITY
+        } else {
+            f32::NAN
+        }
     } else {
         ((-1.0f32).powi(sign as i32)) * (1.0 + frac as f32 / 1024.0) * 2.0f32.powi(exp as i32 - 15)
     }
@@ -205,9 +242,15 @@ fn f32_to_fp16_soft(v: f32) -> u16 {
     let sign = (bits >> 31) & 1;
     let exp = ((bits >> 23) & 0xFF) as i32 - 127;
     let frac = bits & 0x7FFFFF;
-    if exp > 15 { ((sign << 15) | 0x7C00) as u16 }
-    else if exp < -14 {
-        if exp < -24 { (sign << 15) as u16 }
-        else { ((sign << 15) | ((0x800000 | frac) >> (-1 - exp + 13))) as u16 }
-    } else { ((sign << 15) | (((exp + 15) as u32) << 10) | (frac >> 13)) as u16 }
+    if exp > 15 {
+        ((sign << 15) | 0x7C00) as u16
+    } else if exp < -14 {
+        if exp < -24 {
+            (sign << 15) as u16
+        } else {
+            ((sign << 15) | ((0x800000 | frac) >> (-1 - exp + 13))) as u16
+        }
+    } else {
+        ((sign << 15) | (((exp + 15) as u32) << 10) | (frac >> 13)) as u16
+    }
 }

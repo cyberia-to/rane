@@ -1,8 +1,8 @@
 //! Projection MIL kernels: QKV, Wo, and backward passes
 //! Ports gen_qkv_proj_dynamic, gen_wo_fwd_dynamic, gen_*_bwd from mil_dynamic.h
 
+use super::{gen_dyn_matmul, mil_footer, mil_header, MilProgram};
 use crate::config::ModelConfig;
-use super::{MilProgram, mil_header, mil_footer, gen_dyn_matmul};
 
 /// QKV projection: xnorm @ [Wq, Wk, Wv] → concat(Q, K, V)
 /// Input: [1, DIM, 1, SEQ + Q_DIM + KV_DIM + KV_DIM]
@@ -17,7 +17,16 @@ pub fn qkv_proj(cfg: &ModelConfig) -> MilProgram {
     // Three matmuls: Q, K, V
     gen_dyn_matmul(&mut m, "q", dim, cfg.q_dim, seq, 0, seq, "x");
     gen_dyn_matmul(&mut m, "k", dim, cfg.kv_dim, seq, 0, seq + cfg.q_dim, "x");
-    gen_dyn_matmul(&mut m, "v", dim, cfg.kv_dim, seq, 0, seq + cfg.q_dim + cfg.kv_dim, "x");
+    gen_dyn_matmul(
+        &mut m,
+        "v",
+        dim,
+        cfg.kv_dim,
+        seq,
+        0,
+        seq + cfg.q_dim + cfg.kv_dim,
+        "x",
+    );
 
     // Concat Q, K, V along channel axis
     m += "        int32 cax = const()[name=string(\"cax\"), val=int32(1)];\n";
@@ -25,7 +34,13 @@ pub fn qkv_proj(cfg: &ModelConfig) -> MilProgram {
     m += &format!("        tensor<fp16, [1,{out_ch},1,{seq}]> out = concat(axis=cax,interleave=cid,values=(q_y,k_y,v_y))[name=string(\"out\")];\n");
 
     m += &mil_footer("out");
-    MilProgram { text: m, input_channels: dim, input_spatial: sp, output_channels: out_ch, output_spatial: seq }
+    MilProgram {
+        text: m,
+        input_channels: dim,
+        input_spatial: sp,
+        output_channels: out_ch,
+        output_spatial: seq,
+    }
 }
 
 /// Wo forward: attn_out @ Wo^T → [1, DIM, 1, SEQ]
@@ -36,7 +51,13 @@ pub fn wo_fwd(cfg: &ModelConfig) -> MilProgram {
     let mut m = mil_header(cfg.q_dim, sp);
     gen_dyn_matmul(&mut m, "wo", cfg.q_dim, cfg.dim, cfg.seq, 0, cfg.seq, "x");
     m += &mil_footer("wo_y");
-    MilProgram { text: m, input_channels: cfg.q_dim, input_spatial: sp, output_channels: cfg.dim, output_spatial: cfg.seq }
+    MilProgram {
+        text: m,
+        input_channels: cfg.q_dim,
+        input_spatial: sp,
+        output_channels: cfg.dim,
+        output_spatial: cfg.seq,
+    }
 }
 
 /// FFN backward W2^T: dffn @ W2^T → [1, HIDDEN, 1, SEQ]
@@ -47,7 +68,13 @@ pub fn ffn_bwd_w2t(cfg: &ModelConfig) -> MilProgram {
     let mut m = mil_header(cfg.dim, sp);
     gen_dyn_matmul(&mut m, "bw2", cfg.dim, cfg.hidden, cfg.seq, 0, cfg.seq, "x");
     m += &mil_footer("bw2_y");
-    MilProgram { text: m, input_channels: cfg.dim, input_spatial: sp, output_channels: cfg.hidden, output_spatial: cfg.seq }
+    MilProgram {
+        text: m,
+        input_channels: cfg.dim,
+        input_spatial: sp,
+        output_channels: cfg.hidden,
+        output_spatial: cfg.seq,
+    }
 }
 
 /// FFN backward W1^T + W3^T: dh1@W1^T + dh3@W3^T → [1, DIM, 1, SEQ]
@@ -88,13 +115,21 @@ pub fn ffn_bwd_w13t(cfg: &ModelConfig) -> MilProgram {
     m += "        bool bF = const()[name=string(\"bF\"), val=bool(false)];\n";
     m += &format!("        tensor<fp16, [1,1,{seq},{dim}]> dx1m = matmul(transpose_x=bF,transpose_y=bF,x=dh1t,y=W1t2)[name=string(\"dx1m\")];\n");
     m += &format!("        tensor<fp16, [1,1,{seq},{dim}]> dx3m = matmul(transpose_x=bF,transpose_y=bF,x=dh3t,y=W3t2)[name=string(\"dx3m\")];\n");
-    m += &format!("        tensor<fp16, [1,1,{seq},{dim}]> dxm = add(x=dx1m,y=dx3m)[name=string(\"dxm\")];\n");
+    m += &format!(
+        "        tensor<fp16, [1,1,{seq},{dim}]> dxm = add(x=dx1m,y=dx3m)[name=string(\"dxm\")];\n"
+    );
     m += &format!("        tensor<fp16, [1,1,{dim},{seq}]> dxt = transpose(perm=pm,x=dxm)[name=string(\"dxt\")];\n");
     m += &format!("        tensor<int32, [4]> ro = const()[name=string(\"ro\"), val=tensor<int32, [4]>([1,{dim},1,{seq}])];\n");
     m += &format!("        tensor<fp16, [1,{dim},1,{seq}]> dx = reshape(shape=ro,x=dxt)[name=string(\"dx\")];\n");
     m += &mil_footer("dx");
 
-    MilProgram { text: m, input_channels: hidden, input_spatial: sp, output_channels: dim, output_spatial: seq }
+    MilProgram {
+        text: m,
+        input_channels: hidden,
+        input_spatial: sp,
+        output_channels: dim,
+        output_spatial: seq,
+    }
 }
 
 /// Wo^T backward: dy @ Wo → [1, Q_DIM, 1, SEQ]
@@ -105,7 +140,13 @@ pub fn wot_bwd(cfg: &ModelConfig) -> MilProgram {
     let mut m = mil_header(cfg.dim, sp);
     gen_dyn_matmul(&mut m, "wot", cfg.dim, cfg.q_dim, cfg.seq, 0, cfg.seq, "x");
     m += &mil_footer("wot_y");
-    MilProgram { text: m, input_channels: cfg.dim, input_spatial: sp, output_channels: cfg.q_dim, output_spatial: cfg.seq }
+    MilProgram {
+        text: m,
+        input_channels: cfg.dim,
+        input_spatial: sp,
+        output_channels: cfg.q_dim,
+        output_spatial: cfg.seq,
+    }
 }
 
 /// Q backward: dq @ Wq^T → [1, DIM, 1, SEQ]
@@ -116,7 +157,13 @@ pub fn q_bwd(cfg: &ModelConfig) -> MilProgram {
     let mut m = mil_header(cfg.q_dim, sp);
     gen_dyn_matmul(&mut m, "qb", cfg.q_dim, cfg.dim, cfg.seq, 0, cfg.seq, "x");
     m += &mil_footer("qb_y");
-    MilProgram { text: m, input_channels: cfg.q_dim, input_spatial: sp, output_channels: cfg.dim, output_spatial: cfg.seq }
+    MilProgram {
+        text: m,
+        input_channels: cfg.q_dim,
+        input_spatial: sp,
+        output_channels: cfg.dim,
+        output_spatial: cfg.seq,
+    }
 }
 
 /// KV backward: dk@Wk^T + dv@Wv^T → [1, DIM, 1, SEQ]
@@ -154,11 +201,19 @@ pub fn kv_bwd(cfg: &ModelConfig) -> MilProgram {
     m += "        bool bF = const()[name=string(\"bF\"), val=bool(false)];\n";
     m += &format!("        tensor<fp16, [1,1,{seq},{dim}]> dxk = matmul(transpose_x=bF,transpose_y=bF,x=dkt,y=Wkt2)[name=string(\"dxk\")];\n");
     m += &format!("        tensor<fp16, [1,1,{seq},{dim}]> dxv = matmul(transpose_x=bF,transpose_y=bF,x=dvt,y=Wvt2)[name=string(\"dxv\")];\n");
-    m += &format!("        tensor<fp16, [1,1,{seq},{dim}]> dxm = add(x=dxk,y=dxv)[name=string(\"dxm\")];\n");
+    m += &format!(
+        "        tensor<fp16, [1,1,{seq},{dim}]> dxm = add(x=dxk,y=dxv)[name=string(\"dxm\")];\n"
+    );
     m += &format!("        tensor<fp16, [1,1,{dim},{seq}]> dxt = transpose(perm=pm,x=dxm)[name=string(\"dxt\")];\n");
     m += &format!("        tensor<int32, [4]> ro = const()[name=string(\"ro\"), val=tensor<int32, [4]>([1,{dim},1,{seq}])];\n");
     m += &format!("        tensor<fp16, [1,{dim},1,{seq}]> dx = reshape(shape=ro,x=dxt)[name=string(\"dx\")];\n");
     m += &mil_footer("dx");
 
-    MilProgram { text: m, input_channels: kv_dim, input_spatial: sp, output_channels: dim, output_spatial: seq }
+    MilProgram {
+        text: m,
+        input_channels: kv_dim,
+        input_spatial: sp,
+        output_channels: dim,
+        output_spatial: seq,
+    }
 }

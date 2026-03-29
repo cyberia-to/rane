@@ -2,8 +2,8 @@
 //! cargo run --release --example bench
 
 use ane::config;
-use ane::mil::{self, projection, ffn, sdpa};
-use ane::surface::{AneSurface, f32_to_fp16};
+use ane::mil::{self, ffn, projection, sdpa};
+use ane::surface::{f32_to_fp16, AneSurface};
 use ane::{AneModel, MilProgram};
 use std::time::Instant;
 
@@ -13,7 +13,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Benchmark matmul at various sizes
     println!("── Matmul compile + eval ──");
-    for &(ic, oc, seq) in &[(64,64,64), (128,128,128), (256,256,256), (512,512,256), (1024,1024,256)] {
+    for &(ic, oc, seq) in &[
+        (64, 64, 64),
+        (128, 128, 128),
+        (256, 256, 256),
+        (512, 512, 256),
+        (1024, 1024, 256),
+    ] {
         let program = mil::matmul(ic, oc, seq);
         let t0 = Instant::now();
         let mut model = AneModel::compile(&program, &[])?;
@@ -30,7 +36,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Benchmark
         let iters = 100;
         let t1 = Instant::now();
-        for _ in 0..iters { model.run(&input, &output)?; }
+        for _ in 0..iters {
+            model.run(&input, &output)?;
+        }
         let eval_us = t1.elapsed().as_micros() as f64 / iters as f64;
         let flops = 2.0 * ic as f64 * oc as f64 * seq as f64;
         let tflops = flops / eval_us / 1e6;
@@ -53,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ];
 
     for (name, program, weights) in &kernels {
-        let w_ref: Vec<(&str, &[u8])> = weights.iter().map(|(k,v)| (*k, v.as_slice())).collect();
+        let w_ref: Vec<(&str, &[u8])> = weights.iter().map(|(k, v)| (*k, v.as_slice())).collect();
         let mut model = AneModel::compile(program, &w_ref)?;
         model.load()?;
         let input = AneSurface::new(program.input_bytes())?;
@@ -64,7 +72,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let iters = 100;
         let t = Instant::now();
-        for _ in 0..iters { model.run(&input, &output)?; }
+        for _ in 0..iters {
+            model.run(&input, &output)?;
+        }
         let us = t.elapsed().as_micros() as f64 / iters as f64;
         println!("  {:20} {:6.1}us", name, us);
     }
@@ -72,13 +82,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // SDPA kernels with weights
     println!("\n── SDPA kernels (with BLOBFILE weights) ──");
     let sdpa_cases: Vec<(&str, MilProgram, Vec<(&str, Vec<u8>)>)> = vec![
-        ("sdpa_fwd", sdpa::sdpa_fwd(&cfg), sdpa::sdpa_fwd_weights(&cfg).into_iter().map(|(k,v)| (k,v)).collect()),
-        ("sdpa_bwd1", sdpa::sdpa_bwd1(&cfg), sdpa::sdpa_bwd1_weights(&cfg).into_iter().map(|(k,v)| (k,v)).collect()),
+        (
+            "sdpa_fwd",
+            sdpa::sdpa_fwd(&cfg),
+            sdpa::sdpa_fwd_weights(&cfg)
+                .into_iter()
+                .map(|(k, v)| (k, v))
+                .collect(),
+        ),
+        (
+            "sdpa_bwd1",
+            sdpa::sdpa_bwd1(&cfg),
+            sdpa::sdpa_bwd1_weights(&cfg)
+                .into_iter()
+                .map(|(k, v)| (k, v))
+                .collect(),
+        ),
         ("sdpa_bwd2", sdpa::sdpa_bwd2(&cfg), vec![]),
     ];
 
     for (name, program, weights) in &sdpa_cases {
-        let w_ref: Vec<(&str, &[u8])> = weights.iter().map(|(k,v)| (*k, v.as_slice())).collect();
+        let w_ref: Vec<(&str, &[u8])> = weights.iter().map(|(k, v)| (*k, v.as_slice())).collect();
         let mut model = AneModel::compile(program, &w_ref)?;
         model.load()?;
         let input = AneSurface::new(program.input_bytes())?;
@@ -89,7 +113,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let iters = 50;
         let t = Instant::now();
-        for _ in 0..iters { model.run(&input, &output)?; }
+        for _ in 0..iters {
+            model.run(&input, &output)?;
+        }
         let us = t.elapsed().as_micros() as f64 / iters as f64;
         println!("  {:20} {:6.1}us", name, us);
     }

@@ -2,9 +2,9 @@
 //!
 //! Generates MIL text for all ANE kernels used in transformer training/inference.
 
-pub mod sdpa;
 pub mod ffn;
 pub mod projection;
+pub mod sdpa;
 
 const MIL_BUILD_INFO: &str = concat!(
     "{{\"coremlc-component-MIL\", \"3510.2.1\"}, ",
@@ -25,17 +25,35 @@ pub struct MilProgram {
 impl MilProgram {
     pub fn from_text(
         mil: &str,
-        input_channels: usize, input_spatial: usize,
-        output_channels: usize, output_spatial: usize,
+        input_channels: usize,
+        input_spatial: usize,
+        output_channels: usize,
+        output_spatial: usize,
     ) -> Self {
-        MilProgram { text: mil.to_string(), input_channels, input_spatial, output_channels, output_spatial }
+        MilProgram {
+            text: mil.to_string(),
+            input_channels,
+            input_spatial,
+            output_channels,
+            output_spatial,
+        }
     }
 
-    pub fn as_str(&self) -> &str { &self.text }
-    pub fn input_shape(&self) -> (usize, usize) { (self.input_channels, self.input_spatial) }
-    pub fn output_shape(&self) -> (usize, usize) { (self.output_channels, self.output_spatial) }
-    pub fn input_bytes(&self) -> usize { self.input_channels * self.input_spatial * 2 }
-    pub fn output_bytes(&self) -> usize { self.output_channels * self.output_spatial * 2 }
+    pub fn as_str(&self) -> &str {
+        &self.text
+    }
+    pub fn input_shape(&self) -> (usize, usize) {
+        (self.input_channels, self.input_spatial)
+    }
+    pub fn output_shape(&self) -> (usize, usize) {
+        (self.output_channels, self.output_spatial)
+    }
+    pub fn input_bytes(&self) -> usize {
+        self.input_channels * self.input_spatial * 2
+    }
+    pub fn output_bytes(&self) -> usize {
+        self.output_channels * self.output_spatial * 2
+    }
 }
 
 /// Start a MIL program with header and function signature.
@@ -55,9 +73,13 @@ pub(crate) fn mil_footer(output_var: &str) -> String {
 /// Slices activations and weights from input, reshapes, transposes, matmuls.
 /// Returns the output variable name "{prefix}_y".
 pub(crate) fn gen_dyn_matmul(
-    m: &mut String, prefix: &str,
-    ic: usize, oc: usize, seq: usize,
-    act_sp_off: usize, w_sp_off: usize,
+    m: &mut String,
+    prefix: &str,
+    ic: usize,
+    oc: usize,
+    seq: usize,
+    act_sp_off: usize,
+    w_sp_off: usize,
     input_var: &str,
 ) {
     let p = prefix;
@@ -87,7 +109,13 @@ pub fn matmul(ic: usize, oc: usize, seq: usize) -> MilProgram {
     let mut m = mil_header(ic, sp);
     gen_dyn_matmul(&mut m, "mm", ic, oc, seq, 0, seq, "x");
     m += &mil_footer("mm_y");
-    MilProgram { text: m, input_channels: ic, input_spatial: sp, output_channels: oc, output_spatial: seq }
+    MilProgram {
+        text: m,
+        input_channels: ic,
+        input_spatial: sp,
+        output_channels: oc,
+        output_spatial: seq,
+    }
 }
 
 /// Build an ANE weight blob: 128-byte header + fp16 data.
@@ -95,13 +123,18 @@ pub fn build_weight_blob(fp16_data: &[u16]) -> Vec<u8> {
     let weight_bytes = fp16_data.len() * 2;
     let total = 128 + weight_bytes;
     let mut blob = vec![0u8; total];
-    blob[0] = 1; blob[4] = 2;
-    blob[64] = 0xEF; blob[65] = 0xBE; blob[66] = 0xAD; blob[67] = 0xDE; blob[68] = 1;
+    blob[0] = 1;
+    blob[4] = 2;
+    blob[64] = 0xEF;
+    blob[65] = 0xBE;
+    blob[66] = 0xAD;
+    blob[67] = 0xDE;
+    blob[68] = 1;
     blob[72..76].copy_from_slice(&(weight_bytes as u32).to_le_bytes());
     blob[80..84].copy_from_slice(&128u32.to_le_bytes());
     for (i, &val) in fp16_data.iter().enumerate() {
         let off = 128 + i * 2;
-        blob[off..off+2].copy_from_slice(&val.to_le_bytes());
+        blob[off..off + 2].copy_from_slice(&val.to_le_bytes());
     }
     blob
 }

@@ -45,7 +45,12 @@ dependencies = [
 [[package]]
 name = "ane"
 version = "0.1.0"
+
+[[package]]
+name = "ane-tools"
+version = "0.1.0"
 dependencies = [
+ "ane",
  "safetensors",
  "tokenizers",
  "ureq",

@@ -1,8 +1,6 @@
 # ane — Pure Rust Apple Neural Engine
 
-compile MIL programs, load into ANE hardware, run inference. zero dependencies. zero ObjC.
-
-## quickstart
+compile MIL programs, load into ANE hardware, run inference and training. zero dependencies. zero ObjC.
 
 ```rust
 use ane::{MilProgram, AneSurface, AneModel, f32_to_fp16, fp16_to_f32};
@@ -20,88 +18,85 @@ requirements: macOS + Apple Silicon. nothing else.
 
 ## performance (M1 Pro, Qwen3-0.6B)
 
-| metric | ObjC (old) | Rust | |
-|--------|-----------|------|---|
-| prefill (4 tokens) | 395ms | 363ms | Rust 1.09x faster |
-| decode | 87.8ms/tok | 82.7ms/tok | Rust 1.06x faster |
-| throughput | 11.4 tok/s | 12.1 tok/s | Rust 1.06x faster |
+| metric | Rust | tokens/s |
+|--------|------|----------|
+| prefill (4 tokens) | 363ms | — |
+| decode | 82.7ms/tok | 12.1 |
 
-all 12 ANE kernels verified on hardware. inline NEON asm for fp16 conversion. Accelerate.framework (cblas, vDSP, vvexpf) for CPU ops.
+all 12 ANE kernels verified on hardware. Accelerate.framework for CPU ops. inline NEON asm for fp16.
+
+## how it works
+
+```
+Rust code → objc_msgSend FFI
+  → AppleNeuralEngine.framework (dlopen)
+    → compile MIL → ANE bytecode
+      → XPC to aned daemon
+        → IOKit H11ANEIn → ANE hardware
+```
+
+no ObjC compiler. no Swift. no headers. no linking.
+IOSurfaces for zero-copy CPU↔ANE. see [how-ane-works](docs/explanation/how-ane-works.md) for details.
+
+## usage
+
+```bash
+cargo run --example matmul                # verify ANE access
+cargo run --example compile_kernels       # compile all 12 Qwen3-0.6B kernels
+cargo run --release --example bench       # kernel throughput benchmark
+cargo run --release -p ane-tools --bin convert_hf   # download + convert weights
+cargo run --release --example infer -- --ckpt ane_qwen3_06b_dyn_ckpt.bin
+cargo run --release -p ane-tools --bin chat
+cargo run --release --example train -- --scratch --steps 100
+```
 
 ## structure
 
 ```
 src/
-    lib.rs              public API
-    ffi.rs              IOKit, CoreFoundation, IOSurface, libobjc FFI
-    accel.rs            Accelerate.framework FFI (cblas, vDSP, vecLib)
-    surface.rs          IOSurface wrapper, NEON fp16 conversion
-    model.rs            AneModel compile/load/run/unload
-    config.rs           ModelConfig (Qwen3-0.6B, Stories-110M)
-    weights.rs          checkpoint load, LayerWeights, KVCache
-    mil/
-      mod.rs            matmul builder, weight blob format
-      sdpa.rs           SDPA forward + backward (RoPE, GQA, causal mask)
-      ffn.rs            fused SwiGLU FFN with residual
-      projection.rs     QKV, Wo, backward projection kernels
-    ops/
-      rmsnorm.rs        vDSP-optimized forward/backward
-      rope.rs           rotary position embedding
-      attention.rs      cblas_sgemm causal attention + cached decode
-      loss.rs           cross-entropy with vvexpf softmax
-      adam.rs           AdamW optimizer
-      embed.rs          embedding lookup, vocab compaction
-      activation.rs     SiLU, GQA tile/reduce
+  lib.rs                public API: AneModel, AneSurface, MilProgram, AneError
+  model.rs              compile / load / run / unload lifecycle
+  surface.rs            IOSurface wrapper, NEON fp16 conversion
+  ffi.rs                IOKit, CoreFoundation, IOSurface, libobjc FFI
+  accel.rs              Accelerate.framework (cblas, vDSP, vecLib)
+  staging.rs            IOSurface weight/activation staging for ANE kernels
+  config.rs             model configs (Qwen3-0.6B, Stories-110M)
+  weights.rs            checkpoint I/O, LayerWeights, KVCache
+  mil/                  MIL program builder → ANE bytecode
+    sdpa.rs             SDPA forward + backward (RoPE, GQA, causal mask)
+    ffn.rs              fused SwiGLU FFN with residual
+    projection.rs       QKV, Wo, backward projection kernels
+  ops/                  CPU kernels
+    rmsnorm.rs          vDSP-optimized forward/backward
+    rope.rs             rotary position embedding
+    attention.rs        causal attention + cached decode (cblas)
+    loss.rs             cross-entropy (vvexpf softmax)
+    adam.rs             AdamW optimizer
+    embed.rs            embedding lookup, vocab compaction
+    activation.rs       SiLU, GQA tile/reduce
+    sample.rs           top-k sampling, argmax, PRNG
+  probe/                ane_probe binary — 7-level reverse engineering probe
 examples/
-    matmul.rs           minimal ANE matmul demo
-    compile_kernels.rs  verify all 12 kernels compile on ANE
-    bench.rs            kernel throughput benchmark
-    infer.rs            full inference (ANE prefill + CPU decode + KV-cache)
-    train.rs            training pipeline (forward + backward + optimizer)
-tools/
-  convert_hf.py         HuggingFace → ANE checkpoint converter
-  infer.py              tokenization wrapper for inference
-  dashboard.py          TUI training dashboard
-  tokenize.py           training data preparation
+  matmul.rs             minimal ANE matmul demo
+  compile_kernels.rs    verify all 12 kernels compile on ANE
+  bench.rs              kernel throughput benchmark
+  infer.rs              inference (ANE prefill + CPU decode + KV-cache)
+  train.rs              training (forward + backward + optimizer)
+tools/                  separate crate (ane-tools), heavy dependencies
+  convert_hf.rs         HuggingFace → ANE checkpoint converter
+  tokenize.rs           training data preparation
+  chat.rs               interactive chat with tokenization
+specs/
+  api.md                API specification
+docs/
+  explanation/
+    how-ane-works.md    how the crate reaches ANE hardware
 ```
 
-## examples
+## docs
 
-```bash
-# verify ANE access
-cargo run --example matmul
-
-# compile all 12 Qwen3-0.6B kernels on ANE
-cargo run --example compile_kernels
-
-# benchmark kernel throughput
-cargo run --release --example bench
-
-# inference with checkpoint
-python3 tools/convert_hf.py  # download + convert weights
-echo -e "2610\n330\n279\n525\n" | cargo run --release --example infer -- --ckpt ane_qwen3_06b_dyn_ckpt.bin
-
-# training
-cargo run --release --example train -- --ckpt ane_qwen3_06b_dyn_ckpt.bin --data tinystories_data00.bin
-```
-
-## how it works
-
-```
-your Rust code
-  → ane crate (objc_msgSend FFI to libobjc)
-    → AppleNeuralEngine.framework (dlopen at runtime)
-      → _ANEInMemoryModel (compile MIL → ANE bytecode)
-        → XPC to aned daemon
-          → IOKit H11ANEIn driver
-            → ANE hardware
-```
-
-no ObjC compiler. no Swift. no headers. no linking. no dependencies.
-
-IOSurfaces for zero-copy CPU↔ANE data transfer. inline NEON asm for fp16↔f32 conversion. Accelerate.framework for BLAS/vDSP.
-
-see [ANE_API.md](ANE_API.md) for complete API reference.
+- [specs/api.md](specs/api.md) — API specification: concepts, lifecycle, apple mapping
+- [docs/explanation/how-ane-works.md](docs/explanation/how-ane-works.md) — how ane bypasses Apple's three barriers
 
 ## license
 

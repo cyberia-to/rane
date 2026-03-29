@@ -5,8 +5,8 @@
 //!
 //! Run: cargo run --example matmul
 
-use ane::{AneSurface, AneModel, fp16_to_f32, f32_to_fp16};
 use ane::mil;
+use ane::{f32_to_fp16, fp16_to_f32, AneModel, AneSurface};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("ANE Matmul — Pure Rust\n");
@@ -21,8 +21,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (in_ch, in_sp) = program.input_shape();
     let (out_ch, out_sp) = program.output_shape();
     println!("  MIL: matmul({ic}x{oc}, seq={seq})");
-    println!("  Input:  [1, {in_ch}, 1, {in_sp}] fp16 ({} KB)", program.input_bytes() / 1024);
-    println!("  Output: [1, {out_ch}, 1, {out_sp}] fp16 ({} KB)\n", program.output_bytes() / 1024);
+    println!(
+        "  Input:  [1, {in_ch}, 1, {in_sp}] fp16 ({} KB)",
+        program.input_bytes() / 1024
+    );
+    println!(
+        "  Output: [1, {out_ch}, 1, {out_sp}] fp16 ({} KB)\n",
+        program.output_bytes() / 1024
+    );
 
     // Compile
     print!("  Compiling...");
@@ -60,7 +66,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     output.with_data(|data| {
         print!("  Output[0..8] = [");
         for i in 0..8 {
-            if i > 0 { print!(", "); }
+            if i > 0 {
+                print!(", ");
+            }
             print!("{:.1}", fp16_to_f32(data[i]));
         }
         println!("]");
@@ -68,7 +76,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Verify: identity matmul should give all 1.0 (each output = sum of row × identity col = 1.0)
         // Actually: [SEQ,IC] @ [IC,OC] with identity → output = ones × I = ones
         // But the matmul is (seq=64) @ (ic=64,oc=64), so each output is dot(ones_64, identity_col) = 1.0
-        let all_ones = data[..out_ch * out_sp].iter().all(|&v| fp16_to_f32(v) == 1.0);
+        let all_ones = data[..out_ch * out_sp]
+            .iter()
+            .all(|&v| fp16_to_f32(v) == 1.0);
         if all_ones {
             println!("\n  VERIFIED: all {} output values = 1.0", out_ch * out_sp);
             println!("  Pure Rust → MIL → ANE bytecode → ANE hardware → correct result");

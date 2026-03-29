@@ -1,8 +1,8 @@
 //! AneModel: compile MIL, load into ANE, run on hardware, unload
 
 use crate::ffi::*;
-use crate::surface::AneSurface;
 use crate::mil::MilProgram;
+use crate::surface::AneSurface;
 use crate::AneError;
 use std::ffi::{c_char, c_void, CStr};
 use std::path::PathBuf;
@@ -41,10 +41,13 @@ impl AneModel {
             let mil_data = msg_send_2::<*const u8, u64>(
                 cls("NSData") as ObjcId,
                 "dataWithBytes:length:",
-                mil_bytes.as_ptr(), mil_bytes.len() as u64,
+                mil_bytes.as_ptr(),
+                mil_bytes.len() as u64,
             );
             if mil_data.is_null() {
-                return Err(AneError::CompilationFailed("Failed to create NSData".into()));
+                return Err(AneError::CompilationFailed(
+                    "Failed to create NSData".into(),
+                ));
             }
 
             // Build weights NSDictionary
@@ -57,7 +60,9 @@ impl AneModel {
             let descriptor = msg_send_3::<ObjcId, ObjcId, ObjcId>(
                 cls_descriptor as ObjcId,
                 "modelWithMILText:weights:optionsPlist:",
-                mil_data, weights_dict, ptr::null_mut(),
+                mil_data,
+                weights_dict,
+                ptr::null_mut(),
             );
             if descriptor.is_null() {
                 return Err(AneError::DescriptorCreationFailed);
@@ -88,13 +93,20 @@ impl AneModel {
                 if let Some(parent) = full.parent() {
                     let _ = std::fs::create_dir_all(parent);
                 }
-                std::fs::write(&full, data)
-                    .map_err(|e| AneError::CompilationFailed(format!("Failed to write weight {}: {}", rel, e)))?;
+                std::fs::write(&full, data).map_err(|e| {
+                    AneError::CompilationFailed(format!("Failed to write weight {}: {}", rel, e))
+                })?;
             }
 
             // compileWithQoS:options:error:
             let mut error: ObjcId = ptr::null_mut();
-            let ok = msg_send_compile(model, "compileWithQoS:options:error:", 21, empty_dict, &mut error);
+            let ok = msg_send_compile(
+                model,
+                "compileWithQoS:options:error:",
+                21,
+                empty_dict,
+                &mut error,
+            );
             if !ok {
                 let msg = nserror_string(error).unwrap_or_else(|| "unknown error".into());
                 return Err(AneError::CompilationFailed(msg));
@@ -114,8 +126,11 @@ impl AneModel {
         unsafe {
             let mut error: ObjcId = ptr::null_mut();
             let ok = msg_send_compile(
-                self.objc_model, "loadWithQoS:options:error:",
-                21, self.empty_dict, &mut error,
+                self.objc_model,
+                "loadWithQoS:options:error:",
+                21,
+                self.empty_dict,
+                &mut error,
             );
             if !ok {
                 let msg = nserror_string(error).unwrap_or_else(|| "unknown error".into());
@@ -137,12 +152,16 @@ impl AneModel {
 
             // evaluateWithQoS:options:request:error:
             let mut error: ObjcId = ptr::null_mut();
-            type EvalFn = unsafe extern "C" fn(ObjcId, ObjcSel, u32, ObjcId, ObjcId, *mut ObjcId) -> bool;
+            type EvalFn =
+                unsafe extern "C" fn(ObjcId, ObjcSel, u32, ObjcId, ObjcId, *mut ObjcId) -> bool;
             let eval: EvalFn = std::mem::transmute(objc_msgSend as *const c_void);
             let ok = eval(
                 self.objc_model,
                 sel("evaluateWithQoS:options:request:error:"),
-                21, self.empty_dict, request, &mut error,
+                21,
+                self.empty_dict,
+                request,
+                &mut error,
             );
             if !ok {
                 let msg = nserror_string(error).unwrap_or_else(|| "unknown error".into());
@@ -154,7 +173,9 @@ impl AneModel {
 
     /// Unload the model from ANE hardware.
     pub fn unload(&mut self) -> Result<(), AneError> {
-        if !self.loaded { return Ok(()); }
+        if !self.loaded {
+            return Ok(());
+        }
         unsafe {
             let mut error: ObjcId = ptr::null_mut();
             type UnloadFn = unsafe extern "C" fn(ObjcId, ObjcSel, u32, *mut ObjcId) -> bool;
@@ -184,20 +205,29 @@ fn load_ane_frameworks() {
     static INIT: Once = Once::new();
     INIT.call_once(|| {
         for name in &["AppleNeuralEngine", "ANECompiler", "ANEServices"] {
-            let path = format!("/System/Library/PrivateFrameworks/{}.framework/{}", name, name);
+            let path = format!(
+                "/System/Library/PrivateFrameworks/{}.framework/{}",
+                name, name
+            );
             let c = std::ffi::CString::new(path).unwrap();
-            unsafe { dlopen(c.as_ptr(), RTLD_NOW); }
+            unsafe {
+                dlopen(c.as_ptr(), RTLD_NOW);
+            }
         }
     });
 }
 
 fn objc_nsstring_to_rust(obj: ObjcId) -> Option<String> {
-    if obj.is_null() { return None; }
+    if obj.is_null() {
+        return None;
+    }
     unsafe {
         type F = unsafe extern "C" fn(ObjcId, ObjcSel) -> *const c_char;
         let f: F = std::mem::transmute(objc_msgSend as *const c_void);
         let cstr = f(obj, sel("UTF8String"));
-        if cstr.is_null() { return None; }
+        if cstr.is_null() {
+            return None;
+        }
         Some(CStr::from_ptr(cstr).to_string_lossy().into_owned())
     }
 }
@@ -227,7 +257,11 @@ unsafe fn msg_send_3<A, B, C>(target: ObjcId, selector: &str, a: A, b: B, c: C) 
 }
 
 unsafe fn msg_send_compile(
-    target: ObjcId, selector: &str, qos: u32, opts: ObjcId, err: *mut ObjcId,
+    target: ObjcId,
+    selector: &str,
+    qos: u32,
+    opts: ObjcId,
+    err: *mut ObjcId,
 ) -> bool {
     type F = unsafe extern "C" fn(ObjcId, ObjcSel, u32, ObjcId, *mut ObjcId) -> bool;
     let f: F = std::mem::transmute(objc_msgSend as *const c_void);
@@ -249,8 +283,10 @@ fn build_weights_dict(weights: &[(&str, &[u8])]) -> ObjcId {
             let data_key = nsstring("data");
             let zero: ObjcId = msg_send_1(cls("NSNumber") as ObjcId, "numberWithInt:", 0i32);
             let nsdata = msg_send_2::<*const u8, u64>(
-                cls("NSData") as ObjcId, "dataWithBytes:length:",
-                data.as_ptr(), data.len() as u64,
+                cls("NSData") as ObjcId,
+                "dataWithBytes:length:",
+                data.as_ptr(),
+                data.len() as u64,
             );
             type SetF = unsafe extern "C" fn(ObjcId, ObjcSel, ObjcId, ObjcId);
             let set: SetF = std::mem::transmute(objc_msgSend as *const c_void);
@@ -267,7 +303,11 @@ fn nsstring(s: &str) -> ObjcId {
         let cstr = std::ffi::CString::new(s).unwrap();
         type F = unsafe extern "C" fn(ObjcId, ObjcSel, *const c_char) -> ObjcId;
         let f: F = std::mem::transmute(objc_msgSend as *const c_void);
-        f(cls("NSString") as ObjcId, sel("stringWithUTF8String:"), cstr.as_ptr())
+        f(
+            cls("NSString") as ObjcId,
+            sel("stringWithUTF8String:"),
+            cstr.as_ptr(),
+        )
     }
 }
 
@@ -300,7 +340,15 @@ unsafe fn build_request(io_in: IOSurfaceRef, io_out: IOSurfaceRef) -> Result<Obj
 
     // requestWithInputs:inputIndices:outputs:outputIndices:weightsBuffer:perfStats:procedureIndex:
     type ReqFn = unsafe extern "C" fn(
-        ObjcId, ObjcSel, ObjcId, ObjcId, ObjcId, ObjcId, ObjcId, ObjcId, ObjcId,
+        ObjcId,
+        ObjcSel,
+        ObjcId,
+        ObjcId,
+        ObjcId,
+        ObjcId,
+        ObjcId,
+        ObjcId,
+        ObjcId,
     ) -> ObjcId;
     let req_fn: ReqFn = std::mem::transmute(objc_msgSend as *const c_void);
     let request = req_fn(

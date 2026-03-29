@@ -1,17 +1,14 @@
-//! Raw FFI bindings to Apple frameworks: IOKit, CoreFoundation, IOSurface, libobjc
-
-#![allow(
-    non_camel_case_types,
-    non_upper_case_globals,
-    non_snake_case,
-    dead_code,
-    clippy::not_unsafe_ptr_arg_deref
-)]
+//! FFI bindings for the ANE probe binary.
+//!
+//! IOKit, CoreFoundation, IOSurface, dlopen/dlsym, ObjC runtime.
+//! These are the probe's OWN bindings, separate from src/ffi.rs library bindings.
 
 use std::ffi::{c_char, c_void, CStr};
 use std::ptr;
 
-// ── Type aliases ──
+// ============================================================
+// Type aliases
+// ============================================================
 
 pub type io_object_t = u32;
 pub type io_service_t = io_object_t;
@@ -19,18 +16,25 @@ pub type io_connect_t = u32;
 pub type mach_port_t = u32;
 pub type kern_return_t = i32;
 pub type IOOptionBits = u32;
+
+pub const KERN_SUCCESS: kern_return_t = 0;
+pub const kIOMasterPortDefault: mach_port_t = 0;
+
 pub type CFMutableDictionaryRef = *mut c_void;
 pub type CFStringRef = *const c_void;
 pub type CFTypeRef = *const c_void;
+
 pub type IOSurfaceRef = *mut c_void;
+
+// ObjC runtime types
 pub type ObjcClass = *const c_void;
 pub type ObjcSel = *const c_void;
 pub type ObjcId = *mut c_void;
 
-// ── Constants ──
+// ============================================================
+// Constants
+// ============================================================
 
-pub const KERN_SUCCESS: kern_return_t = 0;
-pub const kIOMasterPortDefault: mach_port_t = 0;
 pub const kCFStringEncodingUTF8: u32 = 0x08000100;
 pub const kCFNumberSInt32Type: i32 = 3;
 pub const RTLD_NOW: i32 = 0x2;
@@ -42,7 +46,9 @@ pub const KIO_EXCLUSIVE: i32 = 0xe00002be_u32 as i32;
 pub const KIO_NOT_READY: i32 = 0xe00002c0_u32 as i32;
 pub const KIO_NOT_PERMITTED: i32 = 0xe00002c2_u32 as i32;
 
-// ── IOKit ──
+// ============================================================
+// IOKit FFI
+// ============================================================
 
 #[link(name = "IOKit", kind = "framework")]
 extern "C" {
@@ -89,7 +95,9 @@ extern "C" {
     pub fn mach_task_self() -> mach_port_t;
 }
 
-// ── CoreFoundation ──
+// ============================================================
+// CoreFoundation FFI
+// ============================================================
 
 #[link(name = "CoreFoundation", kind = "framework")]
 extern "C" {
@@ -118,21 +126,20 @@ extern "C" {
         key: *const c_void,
         value: *const c_void,
     );
-    pub fn CFDictionaryGetCount(dict: *const c_void) -> i64;
     pub fn CFNumberCreate(
         allocator: *const c_void,
         theType: i32,
         valuePtr: *const c_void,
     ) -> *const c_void;
     pub fn CFRelease(cf: CFTypeRef);
-    pub fn CFCopyDescription(cf: *const c_void) -> CFStringRef;
-    pub fn CFDataCreate(allocator: *const c_void, bytes: *const u8, length: i64) -> *const c_void;
 
     pub static kCFTypeDictionaryKeyCallBacks: c_void;
     pub static kCFTypeDictionaryValueCallBacks: c_void;
 }
 
-// ── IOSurface ──
+// ============================================================
+// IOSurface FFI
+// ============================================================
 
 #[link(name = "IOSurface", kind = "framework")]
 extern "C" {
@@ -144,14 +151,18 @@ extern "C" {
     pub fn IOSurfaceGetID(surface: IOSurfaceRef) -> u32;
 }
 
-// ── dlopen/dlsym ──
+// ============================================================
+// dlopen/dlsym
+// ============================================================
 
 extern "C" {
     pub fn dlopen(filename: *const c_char, flags: i32) -> *mut c_void;
     pub fn dlsym(handle: *mut c_void, symbol: *const c_char) -> *mut c_void;
 }
 
-// ── ObjC runtime ──
+// ============================================================
+// ObjC runtime FFI
+// ============================================================
 
 extern "C" {
     pub fn objc_getClass(name: *const c_char) -> ObjcClass;
@@ -159,7 +170,28 @@ extern "C" {
     pub fn objc_msgSend() -> ObjcId;
 }
 
-// ── Helpers ──
+// ============================================================
+// CFDictionary / CFData introspection
+// ============================================================
+
+extern "C" {
+    pub fn CFDictionaryGetCount(dict: *const c_void) -> i64;
+    pub fn CFDictionaryGetKeysAndValues(
+        dict: *const c_void,
+        keys: *mut *const c_void,
+        values: *mut *const c_void,
+    );
+    pub fn CFCopyDescription(cf: *const c_void) -> CFStringRef;
+    pub fn CFDataCreate(allocator: *const c_void, bytes: *const u8, length: i64) -> *const c_void;
+    pub fn CFDataGetLength(data: *const c_void) -> i64;
+    pub fn CFDataGetBytePtr(data: *const c_void) -> *const u8;
+    pub fn CFBooleanGetValue(boolean: *const c_void) -> bool;
+    pub fn CFArrayGetCount(array: *const c_void) -> i64;
+}
+
+// ============================================================
+// Helper functions
+// ============================================================
 
 pub fn cf_str(s: &str) -> CFStringRef {
     unsafe {
@@ -178,37 +210,6 @@ pub fn cf_num(v: i32) -> *const c_void {
     }
 }
 
-pub fn sel(name: &str) -> ObjcSel {
-    let c = std::ffi::CString::new(name).unwrap();
-    unsafe { sel_registerName(c.as_ptr()) }
-}
-
-pub fn cls(name: &str) -> ObjcClass {
-    let c = std::ffi::CString::new(name).unwrap();
-    unsafe { objc_getClass(c.as_ptr()) }
-}
-
-pub fn nserror_string(err: ObjcId) -> Option<String> {
-    if err.is_null() {
-        return None;
-    }
-    unsafe {
-        type MsgSendId = unsafe extern "C" fn(ObjcId, ObjcSel) -> ObjcId;
-        let f: MsgSendId = std::mem::transmute(objc_msgSend as *const c_void);
-        let desc = f(err, sel("description"));
-        if desc.is_null() {
-            return None;
-        }
-        type MsgSendUtf8 = unsafe extern "C" fn(ObjcId, ObjcSel) -> *const c_char;
-        let u: MsgSendUtf8 = std::mem::transmute(objc_msgSend as *const c_void);
-        let cstr = u(desc, sel("UTF8String"));
-        if cstr.is_null() {
-            return None;
-        }
-        Some(CStr::from_ptr(cstr).to_string_lossy().into_owned())
-    }
-}
-
 pub fn kern_err(kr: kern_return_t) -> String {
     match kr {
         0 => "KERN_SUCCESS".into(),
@@ -220,4 +221,30 @@ pub fn kern_err(kr: kern_return_t) -> String {
         KIO_NOT_PERMITTED => "kIOReturnNotPermitted".into(),
         _ => format!("{:#010x}", kr as u32),
     }
+}
+
+pub fn cf_desc(obj: *const c_void) -> String {
+    if obj.is_null() {
+        return "(null)".into();
+    }
+    unsafe {
+        let desc = CFCopyDescription(obj);
+        if desc.is_null() {
+            return "(no description)".into();
+        }
+        let mut buf = [0i8; 4096];
+        CFStringGetCString(desc, buf.as_mut_ptr(), 4096, kCFStringEncodingUTF8);
+        CFRelease(desc);
+        CStr::from_ptr(buf.as_ptr()).to_string_lossy().into_owned()
+    }
+}
+
+pub fn sel(name: &str) -> ObjcSel {
+    let c = std::ffi::CString::new(name).unwrap();
+    unsafe { sel_registerName(c.as_ptr()) }
+}
+
+pub fn cls(name: &str) -> ObjcClass {
+    let c = std::ffi::CString::new(name).unwrap();
+    unsafe { objc_getClass(c.as_ptr()) }
 }

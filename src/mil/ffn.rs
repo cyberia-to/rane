@@ -1,8 +1,8 @@
 //! FFN MIL kernel: fused SwiGLU forward with residual
 //! Full port of gen_ffn_fused_dynamic_alpha from mil_dynamic.h
 
+use super::{mil_footer, mil_header, MilProgram};
 use crate::config::ModelConfig;
-use super::{MilProgram, mil_header, mil_footer};
 
 /// Fused FFN forward: SwiGLU(x2norm @ W1, x2norm @ W3) @ W2 + x2 (residual)
 /// Input: [1, DIM, 1, 2*SEQ + 3*HIDDEN]
@@ -57,8 +57,12 @@ pub fn ffn_fused(cfg: &ModelConfig, alpha: f32) -> MilProgram {
     m += &format!("        tensor<fp16, [1,{hidden},1,{seq}]> h3 = reshape(shape=rh,x=h3t)[name=string(\"h3\")];\n");
 
     // SiLU + gate
-    m += &format!("        tensor<fp16, [1,{hidden},1,{seq}]> sig = sigmoid(x=h1)[name=string(\"sg\")];\n");
-    m += &format!("        tensor<fp16, [1,{hidden},1,{seq}]> silu = mul(x=h1,y=sig)[name=string(\"si\")];\n");
+    m += &format!(
+        "        tensor<fp16, [1,{hidden},1,{seq}]> sig = sigmoid(x=h1)[name=string(\"sg\")];\n"
+    );
+    m += &format!(
+        "        tensor<fp16, [1,{hidden},1,{seq}]> silu = mul(x=h1,y=sig)[name=string(\"si\")];\n"
+    );
     m += &format!("        tensor<fp16, [1,{hidden},1,{seq}]> gate = mul(x=silu,y=h3)[name=string(\"gt\")];\n");
 
     // gate @ W2: reshape gate, transpose W2
@@ -73,7 +77,9 @@ pub fn ffn_fused(cfg: &ModelConfig, alpha: f32) -> MilProgram {
     m += &format!("        tensor<fp16, [1,{dim},1,{seq}]> ffn_out = reshape(shape=rd2,x=ft)[name=string(\"ffn_out\")];\n");
 
     // Residual: x_next = x2 + alpha * ffn_out
-    m += &format!("        fp16 res_alpha = const()[name=string(\"res_alpha\"), val=fp16({alpha})];\n");
+    m += &format!(
+        "        fp16 res_alpha = const()[name=string(\"res_alpha\"), val=fp16({alpha})];\n"
+    );
     m += &format!("        tensor<fp16, [1,{dim},1,{seq}]> ffn_scaled = mul(x=ffn_out,y=res_alpha)[name=string(\"ffn_sc\")];\n");
     m += &format!("        tensor<fp16, [1,{dim},1,{seq}]> x_next = add(x=x2,y=ffn_scaled)[name=string(\"x_next\")];\n");
 
@@ -83,5 +89,11 @@ pub fn ffn_fused(cfg: &ModelConfig, alpha: f32) -> MilProgram {
     m += &format!("        tensor<fp16, [1,{out_ch},1,{seq}]> out = concat(axis=cax,interleave=cid,values=(x_next,h1,h3,gate))[name=string(\"cat\")];\n");
     m += &mil_footer("out");
 
-    MilProgram { text: m, input_channels: dim, input_spatial: sp, output_channels: out_ch, output_spatial: seq }
+    MilProgram {
+        text: m,
+        input_channels: dim,
+        input_spatial: sp,
+        output_channels: out_ch,
+        output_spatial: seq,
+    }
 }
