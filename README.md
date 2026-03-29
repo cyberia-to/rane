@@ -1,9 +1,16 @@
-# ane — Pure Rust Apple Neural Engine
+# ane
 
-compile MIL programs, load into ANE hardware, run inference and training. zero dependencies. zero ObjC.
+> every Mac has a neural engine. no one lets you use it.
+
+ane is pure Rust access to Apple Neural Engine — the 15.8 TOPS
+accelerator sitting idle inside every Apple Silicon chip. no ObjC
+compiler. no Swift. no CoreML. no Python. no dependencies.
+
+you write a matrix operation. ane compiles it to ANE bytecode, uploads
+to hardware, runs it, and gives you the result. one crate. one call.
 
 ```rust
-use ane::{MilProgram, AneSurface, AneModel, f32_to_fp16, fp16_to_f32};
+use ane::{MilProgram, AneSurface, AneModel};
 
 let program = ane::mil::matmul(64, 64, 64);
 let mut model = AneModel::compile(&program, &[]).unwrap();
@@ -14,89 +21,127 @@ let output = AneSurface::new(program.output_bytes()).unwrap();
 model.run(&input, &output).unwrap();
 ```
 
-requirements: macOS + Apple Silicon. nothing else.
+requirements: macOS + Apple Silicon.
 
-## performance (M1 Pro, Qwen3-0.6B)
+---
 
-| metric | Rust | tokens/s |
-|--------|------|----------|
-| prefill (4 tokens) | 363ms | — |
-| decode | 82.7ms/tok | 12.1 |
+## why this exists
 
-all 12 ANE kernels verified on hardware. Accelerate.framework for CPU ops. inline NEON asm for fp16.
+Apple ships a 15.8 TOPS neural accelerator in every M-series chip.
+the only official way to use it is CoreML — a framework that decides
+when (and whether) your model runs on ANE. no direct access. no
+documentation. no public API.
 
-## how it works
+ane reaches ANE hardware through the same private ObjC classes that
+CoreML uses internally. it calls `objc_msgSend` directly from Rust —
+no ObjC compiler needed, `objc_msgSend` is just a C function. three
+private frameworks loaded via `dlopen`. weight data passes through
+IOSurfaces — kernel-managed shared memory, zero copies.
+
+the result: compile a MIL program, load it into ANE SRAM, dispatch,
+read the output. four calls. the same four calls for a 64×64 matmul
+or a 28-layer transformer.
+
+---
+
+## what it runs
+
+Qwen3-0.6B on M1 Pro:
+
+| | speed | vs CoreML path |
+|---|---|---|
+| prefill (4 tokens) | 363ms | 1.09x faster |
+| decode | 82.7ms/tok | 1.06x faster |
+| throughput | 12.1 tok/s | — |
+
+all 12 ANE kernels (3 forward + 9 backward) compile and run on
+hardware. training loop with AdamW and cosine LR schedule included.
+
+---
+
+## the stack
 
 ```
-Rust code → objc_msgSend FFI
-  → AppleNeuralEngine.framework (dlopen)
-    → compile MIL → ANE bytecode
-      → XPC to aned daemon
-        → IOKit H11ANEIn → ANE hardware
+your Rust code
+  → ane crate (objc_msgSend to libobjc)
+    → AppleNeuralEngine.framework (dlopen)
+      → MIL text → ANE bytecode
+        → XPC to aned daemon
+          → IOKit H11ANEIn driver
+            → ANE hardware
 ```
 
-no ObjC compiler. no Swift. no headers. no linking.
-IOSurfaces for zero-copy CPU↔ANE. see [how-ane-works](docs/explanation/how-ane-works.md) for details.
+three barriers. three bypasses:
+
+| barrier | how ane gets through |
+|---------|---------------------|
+| IOKit entitlement | XPC to aned (the daemon that has the entitlement) |
+| private frameworks | dlopen at runtime, class names via ObjC runtime |
+| undocumented MIL format | reverse-engineered from CoreML model bundles |
+
+see [how-ane-works](docs/explanation/how-ane-works.md) for the full story.
+
+---
 
 ## usage
 
 ```bash
-cargo run --example matmul                # verify ANE access
-cargo run --example compile_kernels       # compile all 12 Qwen3-0.6B kernels
-cargo run --release --example bench       # kernel throughput benchmark
-cargo run --release -p ane-tools --bin convert_hf   # download + convert weights
+# verify ANE access works
+cargo run --example matmul
+
+# compile all 12 Qwen3-0.6B kernels on ANE
+cargo run --example compile_kernels
+
+# benchmark
+cargo run --release --example bench
+
+# download and convert Qwen3-0.6B weights
+cargo run --release -p ane-tools --bin convert_hf
+
+# inference
 cargo run --release --example infer -- --ckpt ane_qwen3_06b_dyn_ckpt.bin
+
+# chat
 cargo run --release -p ane-tools --bin chat
+
+# train from scratch
 cargo run --release --example train -- --scratch --steps 100
 ```
 
+---
+
 ## structure
 
+two crates. the core library has zero external dependencies.
+
 ```
-src/
-  lib.rs                public API: AneModel, AneSurface, MilProgram, AneError
-  model.rs              compile / load / run / unload lifecycle
-  surface.rs            IOSurface wrapper, NEON fp16 conversion
-  ffi.rs                IOKit, CoreFoundation, IOSurface, libobjc FFI
+src/                    ane crate — zero deps, system frameworks only
+  lib.rs                AneModel, AneSurface, MilProgram, AneError
+  model.rs              compile / load / run / unload
+  surface.rs            IOSurface wrapper, NEON fp16
+  staging.rs            weight/activation staging for ANE dispatch
+  ffi.rs                IOKit, CoreFoundation, IOSurface, libobjc
   accel.rs              Accelerate.framework (cblas, vDSP, vecLib)
-  staging.rs            IOSurface weight/activation staging for ANE kernels
-  config.rs             model configs (Qwen3-0.6B, Stories-110M)
-  weights.rs            checkpoint I/O, LayerWeights, KVCache
-  mil/                  MIL program builder → ANE bytecode
-    sdpa.rs             SDPA forward + backward (RoPE, GQA, causal mask)
-    ffn.rs              fused SwiGLU FFN with residual
-    projection.rs       QKV, Wo, backward projection kernels
-  ops/                  CPU kernels
-    rmsnorm.rs          vDSP-optimized forward/backward
-    rope.rs             rotary position embedding
-    attention.rs        causal attention + cached decode (cblas)
-    loss.rs             cross-entropy (vvexpf softmax)
-    adam.rs             AdamW optimizer
-    embed.rs            embedding lookup, vocab compaction
-    activation.rs       SiLU, GQA tile/reduce
-    sample.rs           top-k sampling, argmax, PRNG
-  probe/                ane_probe binary — 7-level reverse engineering probe
-examples/
-  matmul.rs             minimal ANE matmul demo
-  compile_kernels.rs    verify all 12 kernels compile on ANE
-  bench.rs              kernel throughput benchmark
-  infer.rs              inference (ANE prefill + CPU decode + KV-cache)
-  train.rs              training (forward + backward + optimizer)
-tools/                  separate crate (ane-tools), heavy dependencies
-  convert_hf.rs         HuggingFace → ANE checkpoint converter
-  tokenize.rs           training data preparation
-  chat.rs               interactive chat with tokenization
-specs/
-  api.md                API specification
-docs/
-  explanation/
-    how-ane-works.md    how the crate reaches ANE hardware
+  mil/                  MIL program builder
+  ops/                  CPU kernels (rmsnorm, attention, loss, adam, ...)
+  probe/                ane_probe — 7-level reverse engineering tool
+
+tools/                  ane-tools crate — heavy deps (safetensors, ureq, ...)
+  convert_hf.rs         HuggingFace → ANE checkpoint
+  chat.rs               interactive chat
+  tokenize.rs           training data prep
+
+specs/api.md            API specification
 ```
+
+---
 
 ## docs
 
-- [specs/api.md](specs/api.md) — API specification: concepts, lifecycle, apple mapping
+- [specs/api.md](specs/api.md) — API specification with Apple ObjC mapping
 - [docs/explanation/how-ane-works.md](docs/explanation/how-ane-works.md) — how ane bypasses Apple's three barriers
+
+---
 
 ## license
 
