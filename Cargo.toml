@@ -20,3 +20,7 @@ path = "examples/matmul.rs"
 [[example]]
 name = "bench"
 path = "examples/bench.rs"
+
+[[example]]
+name = "compare"
+path = "examples/compare.rs"
