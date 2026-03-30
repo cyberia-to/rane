@@ -26,6 +26,10 @@ impl AneModel {
         // Ensure AppleNeuralEngine.framework is loaded
         load_ane_frameworks();
 
+        // SAFETY: All FFI calls below go through objc_msgSend transmuted to typed
+        // function pointers matching the private ObjC method signatures. Null checks
+        // validate every return value before use. Frameworks are loaded via dlopen
+        // before any ObjC call (load_ane_frameworks above).
         unsafe {
             let cls_descriptor = cls("_ANEInMemoryModelDescriptor");
             if cls_descriptor.is_null() {
@@ -90,6 +94,13 @@ impl AneModel {
             for &(path, data) in weights {
                 let rel = path.replace("@model_path/", "");
                 let full = tmp_dir.join(&rel);
+                // Prevent path traversal: resolved path must stay inside tmp_dir
+                if !full.starts_with(&tmp_dir) {
+                    return Err(AneError::CompilationFailed(format!(
+                        "Path traversal in weight path: {}",
+                        rel
+                    )));
+                }
                 if let Some(parent) = full.parent() {
                     let _ = std::fs::create_dir_all(parent);
                 }
@@ -123,6 +134,8 @@ impl AneModel {
 
     /// Load the compiled model into ANE hardware.
     pub fn load(&mut self) -> Result<(), AneError> {
+        // SAFETY: objc_msgSend transmuted to match loadWithQoS:options:error: signature.
+        // self.objc_model is valid (created in compile). Error pointer checked on failure.
         unsafe {
             let mut error: ObjcId = ptr::null_mut();
             let ok = msg_send_compile(
@@ -147,6 +160,9 @@ impl AneModel {
         if !self.loaded {
             return Err(AneError::EvalFailed("Model not loaded".into()));
         }
+        // SAFETY: objc_msgSend transmuted to match evaluateWithQoS:options:request:error:.
+        // Model is loaded (checked above). IOSurfaces wrapped in _ANEIOSurfaceObject
+        // and _ANERequest before dispatch. Error checked on failure.
         unsafe {
             let request = build_request(input.as_raw(), output.as_raw())?;
 

@@ -15,8 +15,18 @@ pub struct AneSurface {
 }
 
 impl AneSurface {
+    /// Maximum surface size: 256 MB (ANE practical limit).
+    const MAX_SURFACE_BYTES: usize = 256 * 1024 * 1024;
+
     /// Create an IOSurface of the given byte size.
     pub fn new(bytes: usize) -> Result<Self, AneError> {
+        if bytes == 0 || bytes > Self::MAX_SURFACE_BYTES {
+            return Err(AneError::SurfaceCreationFailed(format!(
+                "{} bytes (must be 1..={})",
+                bytes,
+                Self::MAX_SURFACE_BYTES
+            )));
+        }
         unsafe {
             let dict = CFDictionaryCreateMutable(
                 ptr::null(),
@@ -240,15 +250,26 @@ fn fp16_to_f32_soft(v: u16) -> f32 {
 fn f32_to_fp16_soft(v: f32) -> u16 {
     let bits = v.to_bits();
     let sign = (bits >> 31) & 1;
-    let exp = ((bits >> 23) & 0xFF) as i32 - 127;
+    let f32_exp = (bits >> 23) & 0xFF;
     let frac = bits & 0x7FFFFF;
+    // NaN / Inf
+    if f32_exp == 0xFF {
+        if frac != 0 {
+            return ((sign << 15) | 0x7C00 | (frac >> 13).max(1)) as u16; // NaN
+        }
+        return ((sign << 15) | 0x7C00) as u16; // Inf
+    }
+    let exp = f32_exp as i32 - 127;
     if exp > 15 {
-        ((sign << 15) | 0x7C00) as u16
+        ((sign << 15) | 0x7C00) as u16 // overflow → Inf
     } else if exp < -14 {
         if exp < -24 {
-            (sign << 15) as u16
+            (sign << 15) as u16 // flush to zero
         } else {
-            ((sign << 15) | ((0x800000 | frac) >> (-1 - exp + 13))) as u16
+            // subnormal: shift = (1 - (-14)) + (23 - 10) = 14 + exp + 13 - exp...
+            // mantissa with implicit 1 bit, shifted right by (14 + exp) positions less
+            let shift = (-14 - exp + 13) as u32; // = -1 - exp (from -14 base, 10-bit mantissa)
+            ((sign << 15) | ((0x800000 | frac) >> shift)) as u16
         }
     } else {
         ((sign << 15) | (((exp + 15) as u32) << 10) | (frac >> 13)) as u16
