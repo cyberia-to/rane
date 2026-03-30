@@ -26,21 +26,14 @@
     clippy::missing_transmute_annotations
 )]
 
-pub mod accel;
-pub mod config;
 pub mod ffi;
 pub mod mil;
 pub mod model;
-pub mod ops;
-pub mod staging;
 pub mod surface;
-pub mod weights;
 
-pub use config::ModelConfig;
-pub use mil::{build_weight_blob, MilProgram};
+pub use mil::{build_weight_blob, gen_dyn_matmul, mil_footer, mil_header, MilProgram};
 pub use model::AneModel;
-pub use surface::{f32_to_fp16, fp16_to_f32, AneSurface};
-pub use weights::{load_checkpoint, CkptHeader, KVCache, LayerWeights};
+pub use surface::{cvt_f16_f32, cvt_f32_f16, f32_to_fp16, fp16_to_f32, AneSurface};
 
 #[derive(Debug)]
 #[non_exhaustive]

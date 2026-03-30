@@ -2,9 +2,6 @@
 //!
 //! Generates MIL text for all ANE kernels used in transformer training/inference.
 
-pub mod ffn;
-pub mod projection;
-pub mod sdpa;
 
 const MIL_BUILD_INFO: &str = concat!(
     "{{\"coremlc-component-MIL\", \"3510.2.1\"}, ",
@@ -15,11 +12,11 @@ const MIL_BUILD_INFO: &str = concat!(
 
 /// A MIL program ready for ANE compilation.
 pub struct MilProgram {
-    text: String,
-    input_channels: usize,
-    input_spatial: usize,
-    output_channels: usize,
-    output_spatial: usize,
+    pub text: String,
+    pub input_channels: usize,
+    pub input_spatial: usize,
+    pub output_channels: usize,
+    pub output_spatial: usize,
 }
 
 impl MilProgram {
@@ -57,7 +54,7 @@ impl MilProgram {
 }
 
 /// Start a MIL program with header and function signature.
-pub(crate) fn mil_header(ic: usize, sp: usize) -> String {
+pub fn mil_header(ic: usize, sp: usize) -> String {
     format!(
         "program(1.3)\n[buildInfo = dict<string, string>({info})]\n{{\n    func main<ios18>(tensor<fp16, [1, {ic}, 1, {sp}]> x) {{\n",
         info=MIL_BUILD_INFO, ic=ic, sp=sp,
@@ -65,14 +62,14 @@ pub(crate) fn mil_header(ic: usize, sp: usize) -> String {
 }
 
 /// Close a MIL function with output variable.
-pub(crate) fn mil_footer(output_var: &str) -> String {
+pub fn mil_footer(output_var: &str) -> String {
     format!("    }} -> ({});\n}}\n", output_var)
 }
 
 /// Generate a dynamic matmul block within a MIL function.
 /// Slices activations and weights from input, reshapes, transposes, matmuls.
 /// Returns the output variable name "{prefix}_y".
-pub(crate) fn gen_dyn_matmul(
+pub fn gen_dyn_matmul(
     m: &mut String,
     prefix: &str,
     ic: usize,

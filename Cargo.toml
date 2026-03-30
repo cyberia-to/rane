@@ -1,25 +1,9 @@
-[workspace]
-members = [".", "tools"]
-resolver = "2"
-
-[workspace.package]
+[package]
+name = "ane"
 version = "0.1.0"
 edition = "2021"
 license = "LicenseRef-Cyber"
-
-[workspace.dependencies]
-ane = { path = "." }
-safetensors = "0.5"
-ureq = "3"
-tokenizers = { version = "0.21", default-features = false, features = ["onig"] }
-zip = "2"
-
-[package]
-name = "ane"
 description = "Pure Rust access to Apple Neural Engine — compile MIL, load, run on ANE hardware"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
 
 [lib]
 name = "ane"
@@ -32,19 +16,3 @@ path = "src/probe/main.rs"
 [[example]]
 name = "matmul"
 path = "examples/matmul.rs"
-
-[[example]]
-name = "infer"
-path = "examples/infer.rs"
-
-[[example]]
-name = "compile_kernels"
-path = "examples/compile_kernels.rs"
-
-[[example]]
-name = "train"
-path = "examples/train.rs"
-
-[[example]]
-name = "bench"
-path = "examples/bench.rs"
