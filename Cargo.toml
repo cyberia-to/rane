@@ -16,3 +16,7 @@ path = "src/probe/main.rs"
 [[example]]
 name = "matmul"
 path = "examples/matmul.rs"
+
+[[example]]
+name = "bench"
+path = "examples/bench.rs"

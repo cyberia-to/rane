@@ -113,7 +113,7 @@ impl Drop for AneSurface {
 pub fn fp16_to_f32(v: u16) -> f32 {
     #[cfg(target_arch = "aarch64")]
     {
-        let result: f32;
+        let result: u32;
         unsafe {
             std::arch::asm!(
                 "fmov h0, {src:w}",
@@ -124,7 +124,7 @@ pub fn fp16_to_f32(v: u16) -> f32 {
                 out("v0") _,
             );
         }
-        f32::from_bits(result as u32)
+        f32::from_bits(result)
     }
     #[cfg(not(target_arch = "aarch64"))]
     {
