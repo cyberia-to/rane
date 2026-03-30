@@ -23,13 +23,13 @@ load: upload bytecode into ANE SRAM
 run: dispatch on hardware, block until done
 unload: free SRAM (automatic on drop)
 
-## kernel
+## AneModel
 
 the central type. owns a compiled ANE model.
 
 | method | signature | semantics |
 |--------|-----------|-----------|
-| compile | `(program, weights) → Result<Kernel>` | compile MIL to bytecode. weights: `[(path, data)]` |
+| compile | `(program, weights) → Result<AneModel>` | compile MIL to bytecode. weights: `[(&str, &[u8])]` |
 | load | `(&mut self) → Result<()>` | upload bytecode to ANE SRAM |
 | run | `(&self, input, output) → Result<()>` | execute on ANE hardware (synchronous) |
 | unload | `(&mut self) → Result<()>` | free SRAM. idempotent |
@@ -56,8 +56,8 @@ shared-memory tensor buffer backed by IOSurface. zero-copy between CPU and ANE.
 |--------|-----------|-----------|
 | new | `(bytes) → Result<Surface>` | allocate by byte size |
 | with_shape | `(channels, spatial) → Result<Surface>` | allocate for `[1, C, 1, S]` fp16 tensor |
-| read | `(&self, \|&[u16]\|)` | lock, read fp16 data, unlock |
-| write | `(&self, \|&mut [u16]\|)` | lock, write fp16 data, unlock |
+| with_data | `(&self, \|&[u16]\|) → R` | lock, read fp16 data, unlock |
+| with_data_mut | `(&self, \|&mut [u16]\|) → R` | lock, write fp16 data, unlock |
 | id | `(&self) → u32` | IOSurface ID |
 | size | `(&self) → usize` | allocation in bytes |
 | drop | automatic | CFRelease |
@@ -91,8 +91,10 @@ fp16↔f32 conversion via inline NEON assembly (ARM64) with software fallback.
 
 | function | signature | semantics |
 |----------|-----------|-----------|
-| to_fp16 | `(f32) → u16` | f32 → IEEE 754 half-precision |
-| from_fp16 | `(u16) → f32` | IEEE 754 half-precision → f32 |
+| f32_to_fp16 | `(f32) → u16` | f32 → IEEE 754 half-precision |
+| fp16_to_f32 | `(u16) → f32` | IEEE 754 half-precision → f32 |
+| cvt_f32_f16 | `(&mut [u16], &[f32])` | bulk NEON-vectorized f32→fp16 |
+| cvt_f16_f32 | `(&mut [f32], &[u16])` | bulk NEON-vectorized fp16→f32 |
 
 ## blob
 
@@ -100,7 +102,7 @@ binary weight format for MIL `BLOBFILE` references.
 
 | function | signature | semantics |
 |----------|-----------|-----------|
-| build_blob | `(&[u16]) → Vec<u8>` | wrap fp16 data with 128-byte header |
+| build_weight_blob | `(&[u16]) → Vec<u8>` | wrap fp16 data with 128-byte header |
 
 ### fp16 blob layout
 
@@ -169,7 +171,7 @@ the MIL program slices, reshapes, and matmuls internally.
 - surfaces are reusable: write new data, run again
 - multiple kernels can be loaded simultaneously
 - ANE executes serially on hardware (one dispatch at a time)
-- per-layer weights are staged into input surface before each dispatch
+- weight staging is handled by the runtime layer (cyb/llm), not the driver
 
 ## driver stack
 

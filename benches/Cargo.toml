@@ -1,0 +1,16 @@
+[package]
+name = "ane-benches"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+ane = { path = ".." }
+
+[[bin]]
+name = "bench"
+path = "bench.rs"
+
+[[bin]]
+name = "compare"
+path = "compare.rs"
