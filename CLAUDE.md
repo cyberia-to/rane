@@ -44,7 +44,7 @@ cargo run --example matmul                # verify ANE access
 
 every commit: format clean, clippy clean, builds, examples run.
 
-## project: rane (crate name: ane)
+## project: rane
 
 pure Rust access to Apple Neural Engine. compile MIL programs, load
 into ANE hardware, run inference and training. zero external
@@ -54,7 +54,7 @@ dependencies in the core crate — only macOS system frameworks.
 
 cargo workspace with two members:
 
-- `ane` (root crate) — library + ane_probe binary + examples.
+- `rane` (root crate) — library + rane_probe binary + examples.
   zero external dependencies. links only system frameworks via FFI.
 - `tools/` (crate `ane-tools`) — CLI binaries (convert_hf, tokenize,
   chat). heavy dependencies (safetensors, ureq, tokenizers, zip)
@@ -63,7 +63,7 @@ cargo workspace with two members:
 ```
 src/                  core library (zero deps)
   lib.rs              public API: AneModel, AneSurface, MilProgram, AneError
-  main.rs             ane_probe — 7-level reverse engineering probe
+  main.rs             rane_probe — 7-level reverse engineering probe
   ffi.rs              IOKit, CoreFoundation, IOSurface, libobjc FFI
   accel.rs            Accelerate.framework FFI (cblas, vDSP, vecLib)
   surface.rs          IOSurface wrapper, inline NEON asm for fp16

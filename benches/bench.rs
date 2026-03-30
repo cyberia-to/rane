@@ -2,7 +2,7 @@
 //!
 //! Run: cargo run --release --example bench
 
-use ane::{cvt_f16_f32, cvt_f32_f16, AneModel, AneSurface};
+use rane::{cvt_f16_f32, cvt_f32_f16, AneModel, AneSurface};
 use std::time::Instant;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ── MIL compile ──
     for (ic, oc, seq) in [(32, 32, 32), (64, 64, 64), (128, 128, 64)] {
         let iters = 10;
-        let p = ane::mil::matmul(ic, oc, seq);
+        let p = rane::mil::matmul(ic, oc, seq);
         let t0 = Instant::now();
         for _ in 0..iters {
             let _m = AneModel::compile(&p, &[]).unwrap();
@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ── Load / unload ──
     {
-        let p = ane::mil::matmul(64, 64, 64);
+        let p = rane::mil::matmul(64, 64, 64);
         let iters = 20;
         let t0 = Instant::now();
         for _ in 0..iters {
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let ic = 64;
         let oc = 64;
         let seq = 64;
-        let p = ane::mil::matmul(ic, oc, seq);
+        let p = rane::mil::matmul(ic, oc, seq);
         let mut model = AneModel::compile(&p, &[]).unwrap();
         model.load().unwrap();
 
@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Dispatch overhead (64x64 matmul): {:.3} ms", avg);
 
         // Larger matmul
-        let p2 = ane::mil::matmul(256, 256, 64);
+        let p2 = rane::mil::matmul(256, 256, 64);
         let mut m2 = AneModel::compile(&p2, &[]).unwrap();
         m2.load().unwrap();
         let in2 = AneSurface::new(p2.input_bytes()).unwrap();

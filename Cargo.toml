@@ -20,11 +20,11 @@ categories = ["os::macos-apis", "hardware-support", "science"]
 readme = "README.md"
 
 [lib]
-name = "ane"
+name = "rane"
 path = "src/lib.rs"
 
 [[bin]]
-name = "ane_probe"
+name = "rane_probe"
 path = "src/probe/main.rs"
 
 [[example]]

@@ -62,8 +62,8 @@ for large buffers, use vectorized NEON conversion:
 ```rust
 let f32_data: Vec<f32> = vec![1.0; 1024];
 let mut fp16_data: Vec<u16> = vec![0; 1024];
-ane::cvt_f32_f16(&mut fp16_data, &f32_data);
+rane::cvt_f32_f16(&mut fp16_data, &f32_data);
 
 let mut back: Vec<f32> = vec![0.0; 1024];
-ane::cvt_f16_f32(&mut back, &fp16_data);
+rane::cvt_f16_f32(&mut back, &fp16_data);
 ```

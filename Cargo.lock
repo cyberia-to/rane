@@ -3,12 +3,12 @@
 version = 4
 
 [[package]]
-name = "ane-benches"
+name = "rane"
+version = "0.1.0"
+
+[[package]]
+name = "rane-benches"
 version = "0.1.0"
 dependencies = [
  "rane",
 ]
-
-[[package]]
-name = "rane"
-version = "0.1.0"

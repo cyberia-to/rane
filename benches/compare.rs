@@ -1,4 +1,4 @@
-//! ane driver benchmark with CoreML context
+//! rane driver benchmark with CoreML context
 //!
 //! Measures raw ANE dispatch latency and throughput.
 //! CoreML numbers from Apple documentation and community benchmarks
@@ -7,7 +7,7 @@
 //!
 //! Run: cargo run --release --example compare
 
-use ane::{AneModel, AneSurface};
+use rane::{AneModel, AneSurface};
 use std::time::Instant;
 
 fn min_of(n: usize, f: impl Fn() -> f64) -> f64 {
@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         (512, 512, 256),
         (1024, 1024, 256),
     ] {
-        let p = ane::mil::matmul(ic, oc, seq);
+        let p = rane::mil::matmul(ic, oc, seq);
         let mut model = AneModel::compile(&p, &[]).unwrap();
         model.load().unwrap();
 
@@ -69,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let ms = min_of(3, || {
             let t = Instant::now();
             for _ in 0..iters {
-                let p = ane::mil::matmul(ic, oc, seq);
+                let p = rane::mil::matmul(ic, oc, seq);
                 let mut m = AneModel::compile(&p, &[]).unwrap();
                 m.load().unwrap();
                 let i = AneSurface::new(p.input_bytes()).unwrap();

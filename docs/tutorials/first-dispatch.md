@@ -13,21 +13,21 @@ compile a matmul kernel, run it on Apple Neural Engine, read the result.
 cargo new ane-hello && cd ane-hello
 ```
 
-add ane to Cargo.toml:
+add rane to Cargo.toml:
 
 ```toml
 [dependencies]
-ane = { path = "../rane" }  # or from crates.io when published
+rane = { path = "../rane" }  # or from crates.io when published
 ```
 
 ## step 2: write the program
 
 ```rust
-use ane::{MilProgram, AneSurface, AneModel, f32_to_fp16, fp16_to_f32};
+use rane::{MilProgram, AneSurface, AneModel, f32_to_fp16, fp16_to_f32};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // build a 64×64 matmul: y = x @ W
-    let program = ane::mil::matmul(64, 64, 64);
+    let program = rane::mil::matmul(64, 64, 64);
 
     // compile MIL text → ANE bytecode
     let mut model = AneModel::compile(&program, &[])?;

@@ -6,16 +6,16 @@
 //! # Example
 //!
 //! ```no_run
-//! use ane::{AneModel, AneSurface};
+//! use rane::{AneModel, AneSurface};
 //!
-//! let program = ane::mil::matmul(64, 64, 64);
+//! let program = rane::mil::matmul(64, 64, 64);
 //! let mut model = AneModel::compile(&program, &[])?;
 //! model.load()?;
 //!
 //! let input = AneSurface::new(program.input_bytes())?;
 //! let output = AneSurface::new(program.output_bytes())?;
 //! model.run(&input, &output)?;
-//! # Ok::<(), ane::AneError>(())
+//! # Ok::<(), rane::AneError>(())
 //! ```
 //!
 //! # Architecture

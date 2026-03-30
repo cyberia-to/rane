@@ -1,4 +1,4 @@
-# ane — API specification
+# rane — API specification
 
 the public interface for Apple Neural Engine access from Rust.
 
@@ -37,7 +37,7 @@ the central type. owns a compiled ANE model.
 
 ### apple mapping
 
-| ane method | ObjC class | ObjC selector |
+| rane method | ObjC class | ObjC selector |
 |------------|-----------|---------------|
 | compile | _ANEInMemoryModelDescriptor | modelWithMILText:weights:optionsPlist: |
 | | _ANEInMemoryModel | inMemoryModelWithDescriptor: |
@@ -64,7 +64,7 @@ shared-memory tensor buffer backed by IOSurface. zero-copy between CPU and ANE.
 
 ### apple mapping
 
-| ane method | system call |
+| rane method | system call |
 |------------|------------|
 | new | IOSurfaceCreate(dict) |
 | read | IOSurfaceLock(kRead) → closure → IOSurfaceUnlock |
@@ -176,7 +176,7 @@ the MIL program slices, reshapes, and matmuls internally.
 ## driver stack
 
 ```
-ane crate (objc_msgSend FFI)
+rane crate (objc_msgSend FFI)
   → AppleNeuralEngine.framework (dlopen at runtime)
     → ANECompiler.framework (MIL → bytecode)
       → XPC to aned daemon

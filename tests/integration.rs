@@ -1,7 +1,8 @@
-//! Integration tests for the ane driver
-//! Requires macOS + Apple Silicon with ANE access
+//! Integration tests — no ANE hardware required
+//! These tests verify fp16 conversion, MIL generation, and IOSurface creation.
+//! Run on any macOS (including Intel CI runners).
 
-use ane::{f32_to_fp16, fp16_to_f32, AneModel, AneSurface};
+use rane::{f32_to_fp16, fp16_to_f32, AneSurface};
 
 // ── Surface tests ──
 
@@ -15,7 +16,7 @@ fn surface_create_and_size() {
 #[test]
 fn surface_with_shape() {
     let s = AneSurface::with_shape(64, 128).unwrap();
-    assert!(s.size() >= 64 * 128 * 2); // fp16
+    assert!(s.size() >= 64 * 128 * 2);
 }
 
 #[test]
@@ -32,6 +33,12 @@ fn surface_write_read_roundtrip() {
             assert!((val - i as f32).abs() < 0.5, "mismatch at {}: {}", i, val);
         }
     });
+}
+
+#[test]
+fn surface_bounds_check() {
+    assert!(AneSurface::new(0).is_err());
+    assert!(AneSurface::new(512 * 1024 * 1024).is_err()); // > 256 MB limit
 }
 
 // ── fp16 tests ──
@@ -52,8 +59,8 @@ fn fp16_bulk_conversion() {
     let mut fp16 = vec![0u16; n];
     let mut dst = vec![0.0f32; n];
 
-    ane::cvt_f32_f16(&mut fp16, &src);
-    ane::cvt_f16_f32(&mut dst, &fp16);
+    rane::cvt_f32_f16(&mut fp16, &src);
+    rane::cvt_f16_f32(&mut dst, &fp16);
 
     for i in 0..n {
         let err = (dst[i] - src[i]).abs();
@@ -71,8 +78,8 @@ fn fp16_bulk_conversion() {
 
 #[test]
 fn mil_matmul_shape() {
-    let p = ane::mil::matmul(64, 64, 64);
-    assert_eq!(p.input_shape(), (64, 128)); // ic=64, sp=seq+oc=128
+    let p = rane::mil::matmul(64, 64, 64);
+    assert_eq!(p.input_shape(), (64, 128));
     assert_eq!(p.output_shape(), (64, 64));
     assert_eq!(p.input_bytes(), 64 * 128 * 2);
     assert_eq!(p.output_bytes(), 64 * 64 * 2);
@@ -80,108 +87,9 @@ fn mil_matmul_shape() {
 
 #[test]
 fn mil_matmul_text_is_valid() {
-    let p = ane::mil::matmul(32, 16, 8);
+    let p = rane::mil::matmul(32, 16, 8);
     let text = p.as_str();
     assert!(text.contains("program(1.3)"));
     assert!(text.contains("func main"));
     assert!(text.contains("matmul"));
-}
-
-// ── Model lifecycle tests ──
-
-#[test]
-fn compile_load_unload() {
-    let p = ane::mil::matmul(64, 64, 64);
-    let mut model = AneModel::compile(&p, &[]).unwrap();
-    model.load().unwrap();
-    model.unload().unwrap();
-}
-
-#[test]
-fn compile_load_run_identity() {
-    let ic = 64;
-    let oc = 64;
-    let seq = 64;
-    let p = ane::mil::matmul(ic, oc, seq);
-
-    let mut model = AneModel::compile(&p, &[]).unwrap();
-    model.load().unwrap();
-
-    let input = AneSurface::new(p.input_bytes()).unwrap();
-    let output = AneSurface::new(p.output_bytes()).unwrap();
-
-    // activations = 1.0, weights = identity
-    input.with_data_mut(|d| {
-        let sp = seq + oc;
-        for ch in 0..ic {
-            for s in 0..seq {
-                d[ch * sp + s] = f32_to_fp16(1.0);
-            }
-            for o in 0..oc {
-                d[ch * sp + seq + o] = if ch == o { f32_to_fp16(1.0) } else { 0 };
-            }
-        }
-    });
-
-    model.run(&input, &output).unwrap();
-
-    output.with_data(|d| {
-        let mut max_err: f32 = 0.0;
-        for i in 0..oc * seq {
-            let val = fp16_to_f32(d[i]);
-            max_err = max_err.max((val - 1.0).abs());
-        }
-        assert!(max_err < 0.01, "identity matmul max_err = {}", max_err);
-    });
-}
-
-#[test]
-fn double_unload_is_safe() {
-    let p = ane::mil::matmul(32, 32, 32);
-    let mut model = AneModel::compile(&p, &[]).unwrap();
-    model.load().unwrap();
-    model.unload().unwrap();
-    model.unload().unwrap(); // second unload should be no-op
-}
-
-#[test]
-fn run_without_load_fails() {
-    let p = ane::mil::matmul(32, 32, 32);
-    let model = AneModel::compile(&p, &[]).unwrap();
-    let input = AneSurface::new(p.input_bytes()).unwrap();
-    let output = AneSurface::new(p.output_bytes()).unwrap();
-    assert!(model.run(&input, &output).is_err());
-}
-
-#[test]
-fn multiple_runs_same_model() {
-    let ic = 32;
-    let oc = 32;
-    let seq = 32;
-    let p = ane::mil::matmul(ic, oc, seq);
-    let mut model = AneModel::compile(&p, &[]).unwrap();
-    model.load().unwrap();
-
-    let input = AneSurface::new(p.input_bytes()).unwrap();
-    let output = AneSurface::new(p.output_bytes()).unwrap();
-
-    for _ in 0..10 {
-        model.run(&input, &output).unwrap();
-    }
-}
-
-// ── Different matmul sizes ──
-
-#[test]
-fn matmul_various_sizes() {
-    // ANE has size constraints — shapes must meet hardware alignment requirements
-    for (ic, oc, seq) in [(64, 64, 64), (64, 128, 64), (128, 64, 64)] {
-        let p = ane::mil::matmul(ic, oc, seq);
-        let mut model = AneModel::compile(&p, &[]).unwrap();
-        model.load().unwrap();
-
-        let input = AneSurface::new(p.input_bytes()).unwrap();
-        let output = AneSurface::new(p.output_bytes()).unwrap();
-        model.run(&input, &output).unwrap();
-    }
 }

@@ -15,7 +15,7 @@ Apple locks ANE behind three barriers:
 3. the compilation pipeline accepts MIL (Model Intermediate Language)
    text, a format documented nowhere outside Apple
 
-## how ane bypasses all three
+## how rane bypasses all three
 
 barrier 1: aned is an XPC service. any process can talk to it through
 the ObjC runtime. the crate calls `objc_msgSend` directly — no ObjC

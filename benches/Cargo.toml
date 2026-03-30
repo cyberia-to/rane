@@ -1,12 +1,12 @@
 [package]
-name = "ane-benches"
+name = "rane-benches"
 version.workspace = true
 edition.workspace = true
 license-file.workspace = true
 publish = false
 
 [dependencies]
-ane = { path = "..", package = "rane" }
+rane = { path = ".." }
 
 [[bin]]
 name = "bench"
