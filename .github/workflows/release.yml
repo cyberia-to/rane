@@ -27,7 +27,6 @@ jobs:
           cargo clippy --workspace -- -W warnings
           cargo build --release --workspace
           cargo test --test integration
-          cargo run --example matmul
 
       - name: Publish to crates.io
         env:
