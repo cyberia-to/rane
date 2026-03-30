@@ -5,8 +5,8 @@
 //!
 //! Run: cargo run --example matmul
 
-use rrane::mil;
-use rrane::{f32_to_fp16, fp16_to_f32, AneModel, AneSurface};
+use rane::mil;
+use rane::{f32_to_fp16, fp16_to_f32, AneModel, AneSurface};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("ANE Matmul — Pure Rust\n");
