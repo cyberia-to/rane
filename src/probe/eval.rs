@@ -27,8 +27,7 @@ type MsgSendReq = unsafe extern "C" fn(
     ObjcId,
     ObjcId,
 ) -> ObjcId;
-type MsgSendEval =
-    unsafe extern "C" fn(ObjcId, ObjcSel, u32, ObjcId, ObjcId, *mut ObjcId) -> bool;
+type MsgSendEval = unsafe extern "C" fn(ObjcId, ObjcSel, u32, ObjcId, ObjcId, *mut ObjcId) -> bool;
 type MsgSendUnload = unsafe extern "C" fn(ObjcId, ObjcSel, u32, *mut ObjcId) -> bool;
 
 // ============================================================
@@ -236,18 +235,14 @@ unsafe fn evaluate_on_ane(
         println!("  [-] Evaluation failed");
         if !eval_err.is_null() {
             let desc_sel = sel("description");
-            let desc: ObjcId =
-                std::mem::transmute((std::mem::transmute::<_, MsgSendStr>(
-                    objc_msgSend as *const c_void,
-                ))(eval_err, desc_sel));
+            let desc: ObjcId = std::mem::transmute((std::mem::transmute::<_, MsgSendStr>(
+                objc_msgSend as *const c_void,
+            ))(eval_err, desc_sel));
             if !desc.is_null() {
                 let u: MsgSendUtf8 = std::mem::transmute(objc_msgSend as *const c_void);
                 let s = u(desc, sel("UTF8String"));
                 if !s.is_null() {
-                    println!(
-                        "      Error: {}",
-                        CStr::from_ptr(s).to_string_lossy()
-                    );
+                    println!("      Error: {}", CStr::from_ptr(s).to_string_lossy());
                 }
             }
         }

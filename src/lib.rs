@@ -1,12 +1,14 @@
-//! `ane` — Pure Rust access to Apple Neural Engine
+//! `ane` — Pure Rust driver for Apple Neural Engine
 //!
-//! Compile MIL programs, load them into ANE hardware, and run inference
-//! with zero external dependencies. Only requires macOS with Apple Silicon.
+//! Compile MIL programs, load them into ANE hardware, and dispatch
+//! compute kernels. Zero external dependencies — only macOS system frameworks.
+//!
+//! # Example
 //!
 //! ```no_run
-//! use ane::{MilProgram, AneSurface, AneModel};
+//! use ane::{AneModel, AneSurface};
 //!
-//! let program = MilProgram::matmul(64, 64, 64);
+//! let program = ane::mil::matmul(64, 64, 64);
 //! let mut model = AneModel::compile(&program, &[])?;
 //! model.load()?;
 //!
@@ -15,6 +17,17 @@
 //! model.run(&input, &output)?;
 //! # Ok::<(), ane::AneError>(())
 //! ```
+//!
+//! # Architecture
+//!
+//! ```text
+//! MIL text → AneModel::compile() → load() → run() → unload()
+//!   ↓              ↓                  ↓        ↓
+//!   MIL         aned XPC           ANE SRAM  IOSurface I/O
+//! ```
+//!
+//! All data passes through [`AneSurface`] — IOSurface-backed shared memory
+//! with zero copies between CPU and ANE. Tensor data is fp16.
 
 #![allow(
     non_camel_case_types,
@@ -26,6 +39,7 @@
     clippy::missing_transmute_annotations
 )]
 
+#[doc(hidden)]
 pub mod ffi;
 pub mod mil;
 pub mod model;
@@ -35,17 +49,27 @@ pub use mil::{build_weight_blob, gen_dyn_matmul, mil_footer, mil_header, MilProg
 pub use model::AneModel;
 pub use surface::{cvt_f16_f32, cvt_f32_f16, f32_to_fp16, fp16_to_f32, AneSurface};
 
+/// Errors from ANE driver operations.
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum AneError {
+    /// IOSurface allocation failed (size too large or system out of memory).
     SurfaceCreationFailed(String),
+    /// Required ObjC class not found in private frameworks.
     ClassNotFound(&'static str),
+    /// MIL model descriptor creation rejected by framework.
     DescriptorCreationFailed,
+    /// ANE model object allocation failed.
     ModelCreationFailed,
+    /// MIL → bytecode compilation failed (invalid MIL or unsupported ops).
     CompilationFailed(String),
+    /// Bytecode upload to ANE SRAM failed.
     LoadFailed(String),
+    /// Hardware execution failed (shape mismatch, ANE busy, or driver error).
     EvalFailed(String),
+    /// SRAM release failed.
     UnloadFailed(String),
+    /// Filesystem error (temp directory, weight file I/O).
     Io(std::io::Error),
 }
 

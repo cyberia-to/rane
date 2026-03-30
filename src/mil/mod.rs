@@ -2,7 +2,6 @@
 //!
 //! Generates MIL text for all ANE kernels used in transformer training/inference.
 
-
 const MIL_BUILD_INFO: &str = concat!(
     "{{\"coremlc-component-MIL\", \"3510.2.1\"}, ",
     "{\"coremlc-version\", \"3505.4.1\"}, ",

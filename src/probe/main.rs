@@ -16,11 +16,11 @@
     clippy::missing_transmute_annotations
 )]
 
-mod ffi;
-mod discovery;
-mod frameworks;
 mod compile;
+mod discovery;
 mod eval;
+mod ffi;
+mod frameworks;
 
 use ffi::*;
 

@@ -8,8 +8,8 @@ compiler. no Swift. no CoreML. no Python. no dependencies.
 
 compile a MIL program, load it into ANE SRAM, dispatch, read the output.
 
-```rust
-use ane::{MilProgram, AneSurface, AneModel};
+```rust,ignore
+use ane::{AneModel, AneSurface};
 
 let program = ane::mil::matmul(64, 64, 64);
 let mut model = AneModel::compile(&program, &[]).unwrap();
@@ -22,7 +22,28 @@ model.run(&input, &output).unwrap();
 
 requires macOS + Apple Silicon.
 
----
+## numbers
+
+M1 Pro:
+
+```text
+surface create (1 KB):      0.07 ms
+MIL compile (64x64):        18 ms
+compile + load + unload:     23 ms
+dispatch overhead:           0.24 ms
+```
+
+matmul throughput scaling:
+
+```text
+  64×64×64:       143us   0.004 TFLOPS
+ 256×256×256:     161us   0.209 TFLOPS
+1024×1024×256:    332us   1.619 TFLOPS
+```
+
+vs CoreML predict path: ~10-20x lower dispatch overhead.
+ane skips MLFeatureProvider, NSDictionary wrapping, MLMultiArray extraction.
+goes straight from IOSurface → ANE → IOSurface.
 
 ## why this exists
 
@@ -37,11 +58,9 @@ no ObjC compiler needed, `objc_msgSend` is just a C function. three
 private frameworks loaded via `dlopen`. weight data passes through
 IOSurfaces — kernel-managed shared memory, zero copies.
 
----
-
 ## the stack
 
-```
+```text
 your Rust code
   → ane crate (objc_msgSend to libobjc)
     → AppleNeuralEngine.framework (dlopen)
@@ -58,10 +77,6 @@ three barriers. three bypasses:
 | IOKit entitlement | XPC to aned (the daemon that has the entitlement) |
 | private frameworks | dlopen at runtime, class names via ObjC runtime |
 | undocumented MIL format | reverse-engineered from CoreML model bundles |
-
-see [how-ane-works](docs/explanation/how-ane-works.md) for the full story.
-
----
 
 ## api
 
@@ -85,34 +100,32 @@ surface.with_data(|&[u16]|)
 surface.with_data_mut(|&mut [u16]|)
 
 // MIL program builder
-MilProgram::matmul(ic, oc, seq) -> Self
+ane::mil::matmul(ic, oc, seq) -> MilProgram
 MilProgram::from_text(text, in_ch, in_sp, out_ch, out_sp) -> Self
 
 // fp16 conversion (NEON-accelerated)
 ane::f32_to_fp16(f32) -> u16
 ane::fp16_to_f32(u16) -> f32
+ane::cvt_f32_f16(&mut [u16], &[f32])  // bulk NEON
+ane::cvt_f16_f32(&mut [f32], &[u16])  // bulk NEON
 ```
 
----
-
-## usage
+## build
 
 ```bash
-# verify ANE access works
+cargo build --release
 cargo run --example matmul
-
-# 7-level ANE reverse engineering probe
-cargo run --bin ane_probe
+cargo test --test integration -- --test-threads=1
+cargo run --release -p ane-benches --bin bench
+cargo run --release -p ane-benches --bin compare
 ```
-
----
 
 ## structure
 
-one crate. zero external dependencies — only macOS system frameworks.
+two crates. the core library has zero external dependencies.
 
 ```
-src/
+src/                    ane crate — zero deps, system frameworks only
   lib.rs                AneModel, AneSurface, MilProgram, AneError
   model.rs              compile / load / run / unload
   surface.rs            IOSurface wrapper, NEON fp16
@@ -121,18 +134,20 @@ src/
   probe/                ane_probe — 7-level reverse engineering tool
 examples/
   matmul.rs             64x64 matmul on ANE hardware
+benches/                separate crate with bench + compare binaries
+tests/
+  integration.rs        13 tests: surface, fp16, MIL, model lifecycle
 specs/
   api.md                API specification with Apple ObjC mapping
 docs/
-  explanation/
-    how-ane-works.md    how ane bypasses Apple's three barriers
+  tutorials/            first-dispatch — step-by-step first ANE program
+  guides/               surface-lifecycle — create, read, write, release
+  explanation/           how-ane-works — three barriers, three bypasses
 ```
 
 model-specific code (transformer kernels, CPU ops, training,
 inference, tools) lives in [cyb/llm](https://github.com/cyberia-to/cyb)
 where ane serves as the ANE backend driver.
-
----
 
 ## contributing
 
@@ -142,8 +157,6 @@ we welcome pull requests. especially:
 - **MIL operations** — more verified ops expand what ane can compile
 - **performance** — faster compile/load/dispatch cycles
 - **safety** — soundness fixes in the FFI layer
-
----
 
 ## license
 

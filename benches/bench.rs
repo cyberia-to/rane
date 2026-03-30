@@ -108,7 +108,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         let elapsed = t0.elapsed().as_secs_f64() / iters as f64;
         let gbps = (n * 4) as f64 / elapsed / 1e9;
-        println!("f32→fp16 (16M): {:.2} ms, {:.1} GB/s", elapsed * 1000.0, gbps);
+        println!(
+            "f32→fp16 (16M): {:.2} ms, {:.1} GB/s",
+            elapsed * 1000.0,
+            gbps
+        );
 
         // fp16 → f32
         let t0 = Instant::now();
@@ -117,7 +121,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         let elapsed = t0.elapsed().as_secs_f64() / iters as f64;
         let gbps = (n * 2) as f64 / elapsed / 1e9;
-        println!("fp16→f32 (16M): {:.2} ms, {:.1} GB/s", elapsed * 1000.0, gbps);
+        println!(
+            "fp16→f32 (16M): {:.2} ms, {:.1} GB/s",
+            elapsed * 1000.0,
+            gbps
+        );
     }
 
     Ok(())

@@ -8,6 +8,11 @@ version = "0.1.0"
 edition = "2021"
 license = "LicenseRef-Cyber"
 description = "Pure Rust access to Apple Neural Engine — compile MIL, load, run on ANE hardware"
+repository = "https://github.com/cyberia-to/rane"
+homepage = "https://github.com/cyberia-to/rane"
+keywords = ["ane", "neural-engine", "apple-silicon", "gpu", "macos"]
+categories = ["os::macos-apis", "hardware-support", "science"]
+readme = "README.md"
 
 [lib]
 name = "ane"

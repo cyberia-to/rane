@@ -19,8 +19,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ── Dispatch overhead at various sizes ──
     println!("── Dispatch latency (min of 5 runs × 100 iters) ──");
-    println!("  {:>16}  {:>8}  {:>8}  {:>8}", "size", "latency", "TFLOPS", "note");
-    println!("  {:>16}  {:>8}  {:>8}  {:>8}", "────", "───────", "──────", "────");
+    println!(
+        "  {:>16}  {:>8}  {:>8}  {:>8}",
+        "size", "latency", "TFLOPS", "note"
+    );
+    println!(
+        "  {:>16}  {:>8}  {:>8}  {:>8}",
+        "────", "───────", "──────", "────"
+    );
 
     for &(ic, oc, seq) in &[
         (64, 64, 64),

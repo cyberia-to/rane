@@ -57,7 +57,13 @@ fn fp16_bulk_conversion() {
 
     for i in 0..n {
         let err = (dst[i] - src[i]).abs();
-        assert!(err < 0.1, "bulk conversion error at {}: {} vs {}", i, dst[i], src[i]);
+        assert!(
+            err < 0.1,
+            "bulk conversion error at {}: {} vs {}",
+            i,
+            dst[i],
+            src[i]
+        );
     }
 }
 
