@@ -19,22 +19,6 @@ pub struct MilProgram {
 }
 
 impl MilProgram {
-    pub fn from_text(
-        mil: &str,
-        input_channels: usize,
-        input_spatial: usize,
-        output_channels: usize,
-        output_spatial: usize,
-    ) -> Self {
-        MilProgram {
-            text: mil.to_string(),
-            input_channels,
-            input_spatial,
-            output_channels,
-            output_spatial,
-        }
-    }
-
     pub fn as_str(&self) -> &str {
         &self.text
     }

@@ -47,7 +47,14 @@ pub mod surface;
 
 pub use mil::{build_weight_blob, gen_dyn_matmul, mil_footer, mil_header, MilProgram};
 pub use model::AneModel;
-pub use surface::{cvt_f16_f32, cvt_f32_f16, f32_to_fp16, fp16_to_f32, AneSurface};
+pub use surface::AneSurface;
+
+// Re-export fp16 from acpu (single source of truth for numeric conversions)
+pub use acpu::{cvt_f16_f32, cvt_f32_f16};
+pub use acpu::numeric::fp16::{fp16_to_f32, f32_to_fp16};
+
+// Re-export Block from unimem (single source of truth for IOSurface memory)
+pub use unimem::Block;
 
 /// Errors from ANE driver operations.
 #[derive(Debug)]

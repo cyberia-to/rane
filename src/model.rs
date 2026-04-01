@@ -157,34 +157,42 @@ impl AneModel {
     /// Run the model on ANE hardware.
     /// Input and output must be `AneSurface` with correct sizes for the MIL program.
     pub fn run(&self, input: &AneSurface, output: &AneSurface) -> Result<(), AneError> {
+        unsafe { self.run_raw(input.as_raw(), output.as_raw()) }
+    }
+
+    /// Run the model on ANE with raw IOSurfaceRef handles.
+    ///
+    /// Use this to pass IOSurfaces from external allocators (e.g. cyb-mem)
+    /// without wrapping them in AneSurface. Zero-copy path.
+    ///
+    /// # Safety
+    /// Both IOSurfaceRef must be valid, locked, and sized correctly for the MIL program.
+    pub unsafe fn run_raw(&self, input: IOSurfaceRef, output: IOSurfaceRef) -> Result<(), AneError> {
         if !self.loaded {
             return Err(AneError::EvalFailed("Model not loaded".into()));
         }
         // SAFETY: objc_msgSend transmuted to match evaluateWithQoS:options:request:error:.
         // Model is loaded (checked above). IOSurfaces wrapped in _ANEIOSurfaceObject
         // and _ANERequest before dispatch. Error checked on failure.
-        unsafe {
-            let request = build_request(input.as_raw(), output.as_raw())?;
+        let request = build_request(input, output)?;
 
-            // evaluateWithQoS:options:request:error:
-            let mut error: ObjcId = ptr::null_mut();
-            type EvalFn =
-                unsafe extern "C" fn(ObjcId, ObjcSel, u32, ObjcId, ObjcId, *mut ObjcId) -> bool;
-            let eval: EvalFn = std::mem::transmute(objc_msgSend as *const c_void);
-            let ok = eval(
-                self.objc_model,
-                sel("evaluateWithQoS:options:request:error:"),
-                21,
-                self.empty_dict,
-                request,
-                &mut error,
-            );
-            if !ok {
-                let msg = nserror_string(error).unwrap_or_else(|| "unknown error".into());
-                return Err(AneError::EvalFailed(msg));
-            }
-            Ok(())
+        let mut error: ObjcId = ptr::null_mut();
+        type EvalFn =
+            unsafe extern "C" fn(ObjcId, ObjcSel, u32, ObjcId, ObjcId, *mut ObjcId) -> bool;
+        let eval: EvalFn = std::mem::transmute(objc_msgSend as *const c_void);
+        let ok = eval(
+            self.objc_model,
+            sel("evaluateWithQoS:options:request:error:"),
+            21,
+            self.empty_dict,
+            request,
+            &mut error,
+        );
+        if !ok {
+            let msg = nserror_string(error).unwrap_or_else(|| "unknown error".into());
+            return Err(AneError::EvalFailed(msg));
         }
+        Ok(())
     }
 
     /// Unload the model from ANE hardware.

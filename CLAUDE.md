@@ -47,8 +47,39 @@ every commit: format clean, clippy clean, builds, examples run.
 ## project: rane
 
 pure Rust access to Apple Neural Engine. compile MIL programs, load
-into ANE hardware, run inference and training. zero external
+into ANE hardware, dispatch compute. zero external
 dependencies in the core crate — only macOS system frameworks.
+
+## role in the stack
+
+rane is a hardware ANE driver. it compiles MIL and dispatches to ANE.
+it does NOT allocate shared memory, build model graphs, or schedule ops.
+
+```
+cyb-mem      memory: IOSurface, arena, pool
+acpu         driver: CPU/AMX compute (NEON, AMX inline asm)
+aruminium    driver: Metal GPU compute (shaders, pipelines)
+rane         driver: ANE hardware (MIL compile, dispatch)  ← this crate
+  ↑ drivers — raw hardware access, no model knowledge
+──────────────────────────────────────────────────────
+  ↓ runtimes — model graphs, scheduling, inference logic
+cyb/llm      runtime: graph IR, jets, scheduling, model loading
+```
+
+all inference logic (attention blocks, transformer layers, model loading,
+op scheduling, graph optimization) belongs in the runtime layer
+(https://github.com/cyberia-to/cyb), not in the drivers.
+
+rane provides `mil::matmul`, `AneModel::compile`, `run_raw`. the runtime
+decides WHAT MIL programs to generate and WHEN to dispatch them.
+
+drivers expose raw capabilities. runtimes compose them.
+
+## sibling drivers
+
+- cyb-mem (https://github.com/cyberia-to/unimem) — memory: IOSurface, arena, zero-copy buffers
+- acpu (https://github.com/cyberia-to/acpu) — CPU/AMX: sgemm, softmax, rmsnorm, rope, silu
+- aruminium (https://github.com/cyberia-to/aruminium) — Metal GPU: shaders, buffers, compute
 
 ## architecture
 

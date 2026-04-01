@@ -19,6 +19,10 @@ keywords = ["ane", "neural-engine", "apple-silicon", "gpu", "macos"]
 categories = ["os::macos-apis", "hardware-support", "science"]
 readme = "README.md"
 
+[dependencies]
+unimem = { path = "../unimem" }
+acpu = { path = "../acpu" }
+
 [lib]
 name = "rane"
 path = "src/lib.rs"
