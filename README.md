@@ -45,6 +45,21 @@ vs CoreML predict path: ~10-20x lower dispatch overhead.
 rane skips MLFeatureProvider, NSDictionary wrapping, MLMultiArray extraction.
 goes straight from IOSurface → ANE → IOSurface.
 
+## zero-copy memory
+
+ANE surfaces can use `unimem::Block` — IOSurface-backed pinned memory shared with CPU (acpu) and GPU (aruminium):
+
+```rust,ignore
+use rane::{Block, Program};
+
+let block = Block::open(size)?;
+// fill block with fp16 data via block.as_u16_mut()
+unsafe { program.run_direct(block.handle(), out.handle())? };
+// ANE reads/writes same physical pages — zero copies
+```
+
+one allocation. three devices. no copies.
+
 ## why this exists
 
 Apple ships a 15.8 TOPS neural accelerator in every M-series chip.
