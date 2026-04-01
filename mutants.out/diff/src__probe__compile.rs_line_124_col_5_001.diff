@@ -1,0 +1,23 @@
+--- src/probe/compile.rs
++++ replace try_anec_compile -> bool with false
+@@ -116,19 +116,17 @@
+         try_objc_compile(&mil);
+     }
+ }
+ 
+ fn try_anec_compile(_mil: &str) -> bool {
+     // ANECCreateCompilerInputDictionary/OptionDictionary hang when called
+     // with no args — they likely require arguments we don't know yet.
+     // Skip pure C API for now, go straight to ObjC runtime path.
+-    println!("  [~] Skipping ANECCompile C API (helper functions require");
+-    println!("      unknown arguments). Using ObjC runtime instead.");
+-    false
++    false /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn try_objc_compile(mil: &str) -> bool {
+     println!("  Using ObjC runtime from Rust (objc_msgSend — same as training code)");
+     println!("  No ObjC compiler needed — just C FFI to libobjc\n");
+ 
+     unsafe {
+         // Get ObjC classes

@@ -1,0 +1,51 @@
+
+*** src/lib.rs:105:9: replace <impl From<std::io::Error> for AneError>::from -> Self with Default::default()
+
+*** mutation diff:
+--- src/lib.rs
++++ replace <impl From<std::io::Error> for AneError>::from -> Self with Default::default()
+@@ -97,11 +97,11 @@
+         }
+     }
+ }
+ 
+ impl std::error::Error for AneError {}
+ 
+ impl From<std::io::Error> for AneError {
+     fn from(e: std::io::Error) -> Self {
+-        AneError::Io(e)
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+
+
+*** /Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo test --no-run --verbose --package=rane@0.1.0
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+   Compiling crossbeam-utils v0.8.21
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name build_script_build --edition=2021 /Users/mastercyb/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/crossbeam-utils-0.8.21/build.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no --warn=unexpected_cfgs '--allow=clippy::lint_groups_priority' '--allow=clippy::declare_interior_mutable_const' --check-cfg 'cfg(crossbeam_loom)' --check-cfg 'cfg(crossbeam_sanitize)' --cfg 'feature="std"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "loom", "nightly", "std"))' -C metadata=51562be9e5ad6070 -C extra-filename=-06e3147fd6cde489 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/build/crossbeam-utils-06e3147fd6cde489 -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --cap-lints allow`
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/build/crossbeam-utils-06e3147fd6cde489/build-script-build`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name crossbeam_utils --edition=2021 /Users/mastercyb/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/crossbeam-utils-0.8.21/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs '--allow=clippy::lint_groups_priority' '--allow=clippy::declare_interior_mutable_const' --check-cfg 'cfg(crossbeam_loom)' --check-cfg 'cfg(crossbeam_sanitize)' --cfg 'feature="std"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "loom", "nightly", "std"))' -C metadata=ecde8f16c7fe24a2 -C extra-filename=-55039cc0825a1c98 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --cap-lints allow --check-cfg 'cfg(crossbeam_no_atomic,crossbeam_sanitize_thread)'`
+   Compiling crossbeam-queue v0.3.12
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name crossbeam_queue --edition=2021 /Users/mastercyb/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/crossbeam-queue-0.3.12/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs '--allow=clippy::lint_groups_priority' '--allow=clippy::declare_interior_mutable_const' --check-cfg 'cfg(crossbeam_loom)' --check-cfg 'cfg(crossbeam_sanitize)' --cfg 'feature="alloc"' --cfg 'feature="default"' --cfg 'feature="std"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("alloc", "default", "nightly", "std"))' -C metadata=d8231c4e177fb887 -C extra-filename=-fb7bd552d52e9c63 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern crossbeam_utils=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libcrossbeam_utils-55039cc0825a1c98.rmeta --cap-lints allow`
+   Compiling unimem v0.1.0 (/Users/mastercyb/git/unimem)
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name unimem --edition=2021 /Users/mastercyb/git/unimem/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=949612223e5715cc -C extra-filename=-5f3db965c562320d --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern crossbeam_queue=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libcrossbeam_queue-fb7bd552d52e9c63.rmeta`
+   Compiling acpu v0.1.0 (/Users/mastercyb/git/acpu)
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name acpu --edition=2021 /Users/mastercyb/git/acpu/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=ffc11d75ffb7f52c -C extra-filename=-356fb24183414b8b --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rmeta`
+   Compiling rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp)
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=93f86e99e3f82980 -C extra-filename=-9dba0de8bd33b846 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rmeta --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rmeta`
+error[E0277]: the trait bound `AneError: Default` is not satisfied
+   --> src/lib.rs:105:9
+    |
+105 |         Default::default() /* ~ changed by cargo-mutants ~ */
+    |         ^^^^^^^^^^^^^^^^^^ the trait `Default` is not implemented for `AneError`
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `rane` (lib) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=93f86e99e3f82980 -C extra-filename=-9dba0de8bd33b846 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rmeta --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rmeta` (exit status: 1)
+warning: build failed, waiting for other jobs to finish...
+
+*** result: Failure(101)

@@ -1,0 +1,23 @@
+--- src/probe/frameworks.rs
++++ replace find_sym -> *mut c_void with Default::default()
+@@ -50,19 +50,17 @@
+         println!("  [-] {} — failed to load", name);
+     } else {
+         println!("  [+] {} — loaded @ {:?}", name, h);
+     }
+     h
+ }
+ 
+ pub(crate) fn find_sym(name: &str) -> *mut c_void {
+-    let c = std::ffi::CString::new(name).unwrap();
+-    let rtld_default = (-2isize) as *mut c_void;
+-    unsafe { dlsym(rtld_default, c.as_ptr()) }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ============================================================
+ // Level 5: Load ANE Frameworks (C API)
+ // ============================================================
+ 
+ pub(crate) fn level5_frameworks() -> Option<AneFrameworks> {
+     println!("\n═══════════════════════════════════════════════════");

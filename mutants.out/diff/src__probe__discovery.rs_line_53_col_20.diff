@@ -1,0 +1,21 @@
+--- src/probe/discovery.rs
++++ delete ! in level1_discover
+@@ -45,17 +45,17 @@
+                 println!(
+                     "  [+] {} — FOUND (id={:#x}, class='{}', name='{}')",
+                     name, service, class_str, entry_str
+                 );
+ 
+                 // Read DeviceProperties
+                 let key = cf_str("DeviceProperties");
+                 let val = IORegistryEntryCreateCFProperty(service, key, ptr::null(), 0);
+-                if !val.is_null() {
++                if  /* ~ changed by cargo-mutants ~ */val.is_null() {
+                     let type_id = CFGetTypeID(val);
+                     let dict_id = CFDictionaryGetTypeID();
+                     if type_id == dict_id {
+                         println!("      DeviceProperties = <CFDictionary>");
+                     }
+                     CFRelease(val);
+                 }
+ 

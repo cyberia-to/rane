@@ -1,0 +1,17 @@
+--- src/ffi.rs
++++ delete match arm KIO_NOT_READY in kern_err
+@@ -211,13 +211,13 @@
+ 
+ pub fn kern_err(kr: kern_return_t) -> String {
+     match kr {
+         0 => "KERN_SUCCESS".into(),
+         KIO_BAD_ARG => "kIOReturnBadArgument".into(),
+         KIO_NOT_PRIV => "kIOReturnNotPrivileged".into(),
+         KIO_UNSUPPORTED => "kIOReturnUnsupported".into(),
+         KIO_EXCLUSIVE => "kIOReturnExclusiveAccess".into(),
+-        KIO_NOT_READY => "kIOReturnNotReady".into(),
++         /* ~ changed by cargo-mutants ~ */
+         KIO_NOT_PERMITTED => "kIOReturnNotPermitted".into(),
+         _ => format!("{:#010x}", kr as u32),
+     }
+ }

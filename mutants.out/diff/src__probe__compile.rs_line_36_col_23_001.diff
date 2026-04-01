@@ -1,0 +1,21 @@
+--- src/probe/compile.rs
++++ replace + with * in pack_weights
+@@ -28,17 +28,17 @@
+     blob[68] = 1;
+     // Weight size in bytes
+     blob[72..76].copy_from_slice(&(weight_bytes as u32).to_le_bytes());
+     // Data offset
+     blob[80..84].copy_from_slice(&128u32.to_le_bytes());
+     // Copy fp16 data
+     for (i, &val) in fp16_data.iter().enumerate() {
+         let off = 128 + i * 2;
+-        blob[off..off + 2].copy_from_slice(&val.to_le_bytes());
++        blob[off..off * /* ~ changed by cargo-mutants ~ */ 2].copy_from_slice(&val.to_le_bytes());
+     }
+     blob
+ }
+ 
+ // ============================================================
+ // ObjC runtime msg_send type aliases (used during compilation)
+ // ============================================================
+ 

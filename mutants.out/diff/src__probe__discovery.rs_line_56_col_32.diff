@@ -1,0 +1,21 @@
+--- src/probe/discovery.rs
++++ replace == with != in level1_discover
+@@ -48,17 +48,17 @@
+                 );
+ 
+                 // Read DeviceProperties
+                 let key = cf_str("DeviceProperties");
+                 let val = IORegistryEntryCreateCFProperty(service, key, ptr::null(), 0);
+                 if !val.is_null() {
+                     let type_id = CFGetTypeID(val);
+                     let dict_id = CFDictionaryGetTypeID();
+-                    if type_id == dict_id {
++                    if type_id != /* ~ changed by cargo-mutants ~ */ dict_id {
+                         println!("      DeviceProperties = <CFDictionary>");
+                     }
+                     CFRelease(val);
+                 }
+ 
+                 if found_service.is_none() {
+                     found_service = Some(service);
+                 } else {

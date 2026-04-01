@@ -1,0 +1,23 @@
+--- src/ffi.rs
++++ replace kern_err -> String with String::new()
+@@ -205,19 +205,10 @@
+         if cstr.is_null() {
+             return None;
+         }
+         Some(CStr::from_ptr(cstr).to_string_lossy().into_owned())
+     }
+ }
+ 
+ pub fn kern_err(kr: kern_return_t) -> String {
+-    match kr {
+-        0 => "KERN_SUCCESS".into(),
+-        KIO_BAD_ARG => "kIOReturnBadArgument".into(),
+-        KIO_NOT_PRIV => "kIOReturnNotPrivileged".into(),
+-        KIO_UNSUPPORTED => "kIOReturnUnsupported".into(),
+-        KIO_EXCLUSIVE => "kIOReturnExclusiveAccess".into(),
+-        KIO_NOT_READY => "kIOReturnNotReady".into(),
+-        KIO_NOT_PERMITTED => "kIOReturnNotPermitted".into(),
+-        _ => format!("{:#010x}", kr as u32),
+-    }
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }

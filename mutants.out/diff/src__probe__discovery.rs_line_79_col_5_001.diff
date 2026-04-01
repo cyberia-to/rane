@@ -1,0 +1,40 @@
+--- src/probe/discovery.rs
++++ replace level2_open -> Option<io_connect_t> with Some(Default::default())
+@@ -71,36 +71,17 @@
+     found_service
+ }
+ 
+ // ============================================================
+ // Level 2: Open User Client
+ // ============================================================
+ 
+ pub(crate) fn level2_open(service: io_service_t) -> Option<io_connect_t> {
+-    println!("\n═══════════════════════════════════════════════════");
+-    println!("  LEVEL 2: Open User Client Connection");
+-    println!("═══════════════════════════════════════════════════\n");
+-
+-    for uc_type in 0..=10 {
+-        unsafe {
+-            let mut connect: io_connect_t = 0;
+-            let kr = IOServiceOpen(service, mach_task_self(), uc_type, &mut connect);
+-            if kr == KERN_SUCCESS {
+-                println!(
+-                    "  [+] IOServiceOpen(type={}) => connection={:#x}  *** SUCCESS ***",
+-                    uc_type, connect
+-                );
+-                return Some(connect);
+-            } else {
+-                println!("  [-] IOServiceOpen(type={}) => {}", uc_type, kern_err(kr));
+-            }
+-        }
+-    }
+-    None
++    Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ============================================================
+ // Level 3: Probe Selectors
+ // ============================================================
+ 
+ pub(crate) fn level3_probe(connect: io_connect_t) {
+     println!("\n═══════════════════════════════════════════════════");

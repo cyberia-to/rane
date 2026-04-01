@@ -1,0 +1,21 @@
+--- src/probe/discovery.rs
++++ replace * with / in level4_surface
+@@ -183,17 +183,17 @@
+             &kCFTypeDictionaryKeyCallBacks as *const c_void,
+             &kCFTypeDictionaryValueCallBacks as *const c_void,
+         );
+ 
+         // ANE native format: [1, C, 1, S] where C=channels, S=spatial
+         // Map to IOSurface: width=S, height=1, bytesPerElement=C*2 (fp16)
+         let channels: i32 = 64;
+         let spatial: i32 = 64;
+-        let bpe: i32 = channels * 2;
++        let bpe: i32 = channels / /* ~ changed by cargo-mutants ~ */ 2;
+ 
+         CFDictionarySetValue(dict, cf_str("IOSurfaceWidth") as _, cf_num(spatial));
+         CFDictionarySetValue(dict, cf_str("IOSurfaceHeight") as _, cf_num(1));
+         CFDictionarySetValue(dict, cf_str("IOSurfaceBytesPerElement") as _, cf_num(bpe));
+         CFDictionarySetValue(dict, cf_str("IOSurfacePixelFormat") as _, cf_num(0));
+ 
+         let surface = IOSurfaceCreate(dict);
+         if surface.is_null() {

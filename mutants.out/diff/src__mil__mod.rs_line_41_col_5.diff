@@ -1,0 +1,24 @@
+--- src/mil/mod.rs
++++ replace mil_header -> String with String::new()
+@@ -33,20 +33,17 @@
+     }
+     pub fn output_size(&self) -> usize {
+         self.output_channels * self.output_spatial * 2
+     }
+ }
+ 
+ /// Start a MIL program with header and function signature.
+ pub fn mil_header(ic: usize, sp: usize) -> String {
+-    format!(
+-        "program(1.3)\n[buildInfo = dict<string, string>({info})]\n{{\n    func main<ios18>(tensor<fp16, [1, {ic}, 1, {sp}]> x) {{\n",
+-        info=MIL_BUILD_INFO, ic=ic, sp=sp,
+-    )
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Close a MIL function with output variable.
+ pub fn mil_footer(output_var: &str) -> String {
+     format!("    }} -> ({});\n}}\n", output_var)
+ }
+ 
+ /// Generate a dynamic matmul block within a MIL function.

@@ -1,0 +1,62 @@
+
+*** src/mil/mod.rs:69:8: replace += with *= in gen_dyn_matmul
+
+*** mutation diff:
+--- src/mil/mod.rs
++++ replace += with *= in gen_dyn_matmul
+@@ -61,17 +61,17 @@
+     act_sp_off: usize,
+     w_sp_off: usize,
+     input_var: &str,
+ ) {
+     let p = prefix;
+     let iv = input_var;
+     *m += &format!("        tensor<int32, [4]> {p}_ba = const()[name=string(\"{p}_ba\"), val=tensor<int32, [4]>([0,0,0,{act_sp_off}])];\n");
+     *m += &format!("        tensor<int32, [4]> {p}_sa = const()[name=string(\"{p}_sa\"), val=tensor<int32, [4]>([1,{ic},1,{seq}])];\n");
+-    *m += &format!("        tensor<fp16, [1,{ic},1,{seq}]> {p}_act = slice_by_size(x={iv},begin={p}_ba,size={p}_sa)[name=string(\"{p}_act\")];\n");
++    *m *= /* ~ changed by cargo-mutants ~ */ &format!("        tensor<fp16, [1,{ic},1,{seq}]> {p}_act = slice_by_size(x={iv},begin={p}_ba,size={p}_sa)[name=string(\"{p}_act\")];\n");
+     *m += &format!("        tensor<int32, [4]> {p}_bw = const()[name=string(\"{p}_bw\"), val=tensor<int32, [4]>([0,0,0,{w_sp_off}])];\n");
+     *m += &format!("        tensor<int32, [4]> {p}_sw = const()[name=string(\"{p}_sw\"), val=tensor<int32, [4]>([1,{ic},1,{oc}])];\n");
+     *m += &format!("        tensor<fp16, [1,{ic},1,{oc}]> {p}_wt = slice_by_size(x={iv},begin={p}_bw,size={p}_sw)[name=string(\"{p}_wt\")];\n");
+     *m += &format!("        tensor<int32, [4]> {p}_ra = const()[name=string(\"{p}_ra\"), val=tensor<int32, [4]>([1,1,{ic},{seq}])];\n");
+     *m += &format!("        tensor<fp16, [1,1,{ic},{seq}]> {p}_a2 = reshape(shape={p}_ra,x={p}_act)[name=string(\"{p}_a2\")];\n");
+     *m += &format!("        tensor<int32, [4]> {p}_pm = const()[name=string(\"{p}_pm\"), val=tensor<int32, [4]>([0,1,3,2])];\n");
+     *m += &format!("        tensor<fp16, [1,1,{seq},{ic}]> {p}_a3 = transpose(perm={p}_pm,x={p}_a2)[name=string(\"{p}_a3\")];\n");
+     *m += &format!("        tensor<int32, [4]> {p}_rw = const()[name=string(\"{p}_rw\"), val=tensor<int32, [4]>([1,1,{ic},{oc}])];\n");
+
+
+*** /Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo test --no-run --verbose --package=rane@0.1.0
+       Fresh crossbeam-utils v0.8.21
+       Fresh crossbeam-queue v0.3.12
+       Fresh unimem v0.1.0 (/Users/mastercyb/git/unimem)
+       Fresh acpu v0.1.0 (/Users/mastercyb/git/acpu)
+       Dirty rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp): couldn't read metadata for file `target/debug/deps/librane-9dba0de8bd33b846.rlib`
+   Compiling rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp)
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=93f86e99e3f82980 -C extra-filename=-9dba0de8bd33b846 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rmeta --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rmeta`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=a8475b66b1669da5 -C extra-filename=-4caeb28bedddab43 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+error[E0368]: binary assignment operation `*=` cannot be applied to type `String`
+   --> src/mil/mod.rs:69:5
+    |
+ 69 |     *m *= /* ~ changed by cargo-mutants ~ */ &format!("        tensor<fp16, [1,{ic},1,{seq}]> {p}_act = slice_by_size(x={iv},begin={p}_ba,size={p}_sa)[name=string(\"{p}_act\")];\n");
+    |     --^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     |
+    |     cannot use `*=` on type `String`
+    |
+note: the foreign item type `String` doesn't implement `MulAssign<&String>`
+   --> /Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/string.rs:360:1
+    |
+360 | pub struct String {
+    | ^^^^^^^^^^^^^^^^^ not implement `MulAssign<&String>`
+
+For more information about this error, try `rustc --explain E0368`.
+error: could not compile `rane` (lib test) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=a8475b66b1669da5 -C extra-filename=-4caeb28bedddab43 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib` (exit status: 1)
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `rane` (lib) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=93f86e99e3f82980 -C extra-filename=-9dba0de8bd33b846 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rmeta --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rmeta` (exit status: 1)
+
+*** result: Failure(101)

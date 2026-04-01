@@ -1,0 +1,32 @@
+--- src/model.rs
++++ replace objc_nsstring_to_rust -> Option<String> with Some(String::new())
+@@ -241,28 +241,17 @@
+             unsafe {
+                 dlopen(c.as_ptr(), RTLD_NOW);
+             }
+         }
+     });
+ }
+ 
+ fn objc_nsstring_to_rust(obj: ObjcId) -> Option<String> {
+-    if obj.is_null() {
+-        return None;
+-    }
+-    unsafe {
+-        type F = unsafe extern "C" fn(ObjcId, ObjcSel) -> *const c_char;
+-        let f: F = std::mem::transmute(objc_msgSend as *const c_void);
+-        let cstr = f(obj, sel("UTF8String"));
+-        if cstr.is_null() {
+-            return None;
+-        }
+-        Some(CStr::from_ptr(cstr).to_string_lossy().into_owned())
+-    }
++    Some(String::new()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ unsafe fn msg_send_0(target: ObjcId, selector: &str) -> ObjcId {
+     type F = unsafe extern "C" fn(ObjcId, ObjcSel) -> ObjcId;
+     let f: F = std::mem::transmute(objc_msgSend as *const c_void);
+     f(target, sel(selector))
+ }
+ 

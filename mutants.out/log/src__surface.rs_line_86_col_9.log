@@ -1,0 +1,67 @@
+
+*** src/surface.rs:86:9: replace Buffer::read -> R with Default::default()
+
+*** mutation diff:
+--- src/surface.rs
++++ replace Buffer::read -> R with Default::default()
+@@ -78,25 +78,17 @@
+         }
+     }
+ 
+     /// Lock surface (read-only), call closure with fp16 slice, unlock.
+     pub fn read<F, R>(&self, f: F) -> R
+     where
+         F: FnOnce(&[u16]) -> R,
+     {
+-        unsafe {
+-            IOSurfaceLock(self.raw, 1, ptr::null_mut()); // kIOSurfaceLockReadOnly = 1
+-            let base = IOSurfaceGetBaseAddress(self.raw) as *const u16;
+-            let len = self.size / 2;
+-            let slice = std::slice::from_raw_parts(base, len);
+-            let result = f(slice);
+-            IOSurfaceUnlock(self.raw, 1, ptr::null_mut());
+-            result
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get the raw IOSurfaceRef for passing to `Program::run_direct()`.
+     pub fn as_raw(&self) -> IOSurfaceRef {
+         self.raw
+     }
+ 
+     /// IOSurface ID.
+
+
+*** /Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo test --no-run --verbose --package=rane@0.1.0
+       Fresh crossbeam-utils v0.8.21
+       Fresh crossbeam-queue v0.3.12
+       Fresh unimem v0.1.0 (/Users/mastercyb/git/unimem)
+       Fresh acpu v0.1.0 (/Users/mastercyb/git/acpu)
+       Dirty rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp): the file `src/surface.rs` has changed (1775043241.874514311s, 16s after last build at 1775043225.169946925s)
+   Compiling rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp)
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=a8475b66b1669da5 -C extra-filename=-4caeb28bedddab43 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=93f86e99e3f82980 -C extra-filename=-9dba0de8bd33b846 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rmeta --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rmeta`
+error[E0277]: the trait bound `R: Default` is not satisfied
+  --> src/surface.rs:86:9
+   |
+86 |         Default::default() /* ~ changed by cargo-mutants ~ */
+   |         ^^^^^^^^^^^^^^^^^^ the trait `Default` is not implemented for `R`
+   |
+help: consider further restricting type parameter `R` with trait `Default`
+   |
+84 |         F: FnOnce(&[u16]) -> R, R: std::default::Default
+   |                                 ++++++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `rane` (lib test) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=a8475b66b1669da5 -C extra-filename=-4caeb28bedddab43 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib` (exit status: 1)
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `rane` (lib) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=93f86e99e3f82980 -C extra-filename=-9dba0de8bd33b846 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rmeta --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rmeta` (exit status: 1)
+
+*** result: Failure(101)

@@ -1,0 +1,82 @@
+--- src/probe/discovery.rs
++++ replace level3_probe with ()
+@@ -98,78 +98,17 @@
+     None
+ }
+ 
+ // ============================================================
+ // Level 3: Probe Selectors
+ // ============================================================
+ 
+ pub(crate) fn level3_probe(connect: io_connect_t) {
+-    println!("\n═══════════════════════════════════════════════════");
+-    println!("  LEVEL 3: Probe IOKit Selectors");
+-    println!("═══════════════════════════════════════════════════\n");
+-
+-    for selector in 0..64 {
+-        unsafe {
+-            // Try scalar (no input)
+-            let mut output = [0u64; 16];
+-            let mut output_cnt: u32 = 16;
+-            let kr_scalar = IOConnectCallScalarMethod(
+-                connect,
+-                selector,
+-                ptr::null(),
+-                0,
+-                output.as_mut_ptr(),
+-                &mut output_cnt,
+-            );
+-
+-            // Try struct (no input)
+-            let mut out_buf = [0u8; 4096];
+-            let mut out_size: usize = 4096;
+-            let kr_struct = IOConnectCallStructMethod(
+-                connect,
+-                selector,
+-                ptr::null(),
+-                0,
+-                out_buf.as_mut_ptr() as *mut c_void,
+-                &mut out_size,
+-            );
+-
+-            // Only print if something interesting happened
+-            const MIG_BAD_ID: i32 = 0xfffffbc4_u32 as i32;
+-            let scalar_interesting = kr_scalar != KIO_BAD_ARG && kr_scalar != MIG_BAD_ID;
+-            let struct_interesting = kr_struct != KIO_BAD_ARG && kr_struct != MIG_BAD_ID;
+-
+-            if scalar_interesting || struct_interesting {
+-                print!("  sel {:2}:", selector);
+-                if scalar_interesting {
+-                    if kr_scalar == KERN_SUCCESS {
+-                        print!(
+-                            " scalar=OK({}:{:?})",
+-                            output_cnt,
+-                            &output[..output_cnt as usize]
+-                        );
+-                    } else {
+-                        print!(" scalar={}", kern_err(kr_scalar));
+-                    }
+-                }
+-                if struct_interesting {
+-                    if kr_struct == KERN_SUCCESS {
+-                        print!(" struct=OK({} bytes)", out_size);
+-                        if out_size > 0 && out_size <= 64 {
+-                            print!(" data={:02x?}", &out_buf[..out_size]);
+-                        }
+-                    } else {
+-                        print!(" struct={}", kern_err(kr_struct));
+-                    }
+-                }
+-                println!();
+-            }
+-        }
+-    }
++    () /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ============================================================
+ // Level 4: IOSurface creation
+ // ============================================================
+ 
+ pub(crate) fn level4_surface() -> Option<IOSurfaceRef> {
+     println!("\n═══════════════════════════════════════════════════");

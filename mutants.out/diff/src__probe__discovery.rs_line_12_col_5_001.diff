@@ -1,0 +1,80 @@
+--- src/probe/discovery.rs
++++ replace level1_discover -> Option<io_service_t> with Some(Default::default())
+@@ -4,76 +4,17 @@
+ use std::ffi::{c_void, CStr};
+ use std::ptr;
+ 
+ // ============================================================
+ // Level 1: IOKit Service Discovery
+ // ============================================================
+ 
+ pub(crate) fn level1_discover() -> Option<io_service_t> {
+-    println!("═══════════════════════════════════════════════════");
+-    println!("  LEVEL 1: IOKit Service Discovery");
+-    println!("═══════════════════════════════════════════════════\n");
+-
+-    let candidates = [
+-        "H11ANEIn",
+-        "H11ANEInDirectPathClient",
+-        "AppleH11ANEInterface",
+-        "AppleANELoadBalancer",
+-    ];
+-
+-    let mut found_service: Option<io_service_t> = None;
+-
+-    for name in &candidates {
+-        let c_name = std::ffi::CString::new(*name).unwrap();
+-        unsafe {
+-            let matching = IOServiceMatching(c_name.as_ptr());
+-            if matching.is_null() {
+-                continue;
+-            }
+-
+-            let service = IOServiceGetMatchingService(kIOMasterPortDefault, matching);
+-            if service == 0 {
+-                println!("  [-] {} — not found", name);
+-            } else {
+-                let mut class_name = [0i8; 128];
+-                IOObjectGetClass(service, class_name.as_mut_ptr());
+-                let class_str = CStr::from_ptr(class_name.as_ptr()).to_string_lossy();
+-
+-                let mut entry_name = [0i8; 128];
+-                IORegistryEntryGetName(service, entry_name.as_mut_ptr());
+-                let entry_str = CStr::from_ptr(entry_name.as_ptr()).to_string_lossy();
+-
+-                println!(
+-                    "  [+] {} — FOUND (id={:#x}, class='{}', name='{}')",
+-                    name, service, class_str, entry_str
+-                );
+-
+-                // Read DeviceProperties
+-                let key = cf_str("DeviceProperties");
+-                let val = IORegistryEntryCreateCFProperty(service, key, ptr::null(), 0);
+-                if !val.is_null() {
+-                    let type_id = CFGetTypeID(val);
+-                    let dict_id = CFDictionaryGetTypeID();
+-                    if type_id == dict_id {
+-                        println!("      DeviceProperties = <CFDictionary>");
+-                    }
+-                    CFRelease(val);
+-                }
+-
+-                if found_service.is_none() {
+-                    found_service = Some(service);
+-                } else {
+-                    IOObjectRelease(service);
+-                }
+-            }
+-        }
+-    }
+-
+-    found_service
++    Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ============================================================
+ // Level 2: Open User Client
+ // ============================================================
+ 
+ pub(crate) fn level2_open(service: io_service_t) -> Option<io_connect_t> {
+     println!("\n═══════════════════════════════════════════════════");

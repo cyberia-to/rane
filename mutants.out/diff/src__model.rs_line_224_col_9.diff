@@ -1,0 +1,22 @@
+--- src/model.rs
++++ replace <impl Drop for Program>::drop with ()
+@@ -216,18 +216,17 @@
+             }
+             Ok(())
+         }
+     }
+ }
+ 
+ impl Drop for Program {
+     fn drop(&mut self) {
+-        let _ = self.unload();
+-        let _ = std::fs::remove_dir_all(&self.tmp_dir);
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ // ── Internal helpers ──
+ 
+ fn load_ane_frameworks() {
+     use std::sync::Once;
+     static INIT: Once = Once::new();

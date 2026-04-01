@@ -1,0 +1,21 @@
+--- src/mil/mod.rs
++++ replace Source::output_shape -> (usize, usize) with (1, 1)
+@@ -21,17 +21,17 @@
+ impl Source {
+     pub fn as_str(&self) -> &str {
+         &self.text
+     }
+     pub fn input_shape(&self) -> (usize, usize) {
+         (self.input_channels, self.input_spatial)
+     }
+     pub fn output_shape(&self) -> (usize, usize) {
+-        (self.output_channels, self.output_spatial)
++        (1, 1) /* ~ changed by cargo-mutants ~ */
+     }
+     pub fn input_size(&self) -> usize {
+         self.input_channels * self.input_spatial * 2
+     }
+     pub fn output_size(&self) -> usize {
+         self.output_channels * self.output_spatial * 2
+     }
+ }

@@ -1,0 +1,38 @@
+--- src/ffi.rs
++++ replace nserror_string -> Option<String> with Some(String::new())
+@@ -184,34 +184,17 @@
+ }
+ 
+ pub fn cls(name: &str) -> ObjcClass {
+     let c = std::ffi::CString::new(name).unwrap();
+     unsafe { objc_getClass(c.as_ptr()) }
+ }
+ 
+ pub fn nserror_string(err: ObjcId) -> Option<String> {
+-    if err.is_null() {
+-        return None;
+-    }
+-    unsafe {
+-        type MsgSendId = unsafe extern "C" fn(ObjcId, ObjcSel) -> ObjcId;
+-        let f: MsgSendId = std::mem::transmute(objc_msgSend as *const c_void);
+-        let desc = f(err, sel("description"));
+-        if desc.is_null() {
+-            return None;
+-        }
+-        type MsgSendUtf8 = unsafe extern "C" fn(ObjcId, ObjcSel) -> *const c_char;
+-        let u: MsgSendUtf8 = std::mem::transmute(objc_msgSend as *const c_void);
+-        let cstr = u(desc, sel("UTF8String"));
+-        if cstr.is_null() {
+-            return None;
+-        }
+-        Some(CStr::from_ptr(cstr).to_string_lossy().into_owned())
+-    }
++    Some(String::new()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn kern_err(kr: kern_return_t) -> String {
+     match kr {
+         0 => "KERN_SUCCESS".into(),
+         KIO_BAD_ARG => "kIOReturnBadArgument".into(),
+         KIO_NOT_PRIV => "kIOReturnNotPrivileged".into(),
+         KIO_UNSUPPORTED => "kIOReturnUnsupported".into(),

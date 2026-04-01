@@ -1,0 +1,35 @@
+--- src/model.rs
++++ replace Program::unload -> Result<(), AneError> with Ok(())
+@@ -196,31 +196,17 @@
+             let msg = nserror_string(error).unwrap_or_else(|| "unknown error".into());
+             return Err(AneError::EvalFailed(msg));
+         }
+         Ok(())
+     }
+ 
+     /// Unload the model from ANE hardware.
+     pub fn unload(&mut self) -> Result<(), AneError> {
+-        if !self.loaded {
+-            return Ok(());
+-        }
+-        unsafe {
+-            let mut error: ObjcId = ptr::null_mut();
+-            type UnloadFn = unsafe extern "C" fn(ObjcId, ObjcSel, u32, *mut ObjcId) -> bool;
+-            let f: UnloadFn = std::mem::transmute(objc_msgSend as *const c_void);
+-            let ok = f(self.objc_model, sel("unloadWithQoS:error:"), 21, &mut error);
+-            self.loaded = false;
+-            if !ok {
+-                let msg = nserror_string(error).unwrap_or_else(|| "unknown error".into());
+-                return Err(AneError::UnloadFailed(msg));
+-            }
+-            Ok(())
+-        }
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl Drop for Program {
+     fn drop(&mut self) {
+         let _ = self.unload();
+         let _ = std::fs::remove_dir_all(&self.tmp_dir);
+     }

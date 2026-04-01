@@ -1,0 +1,21 @@
+--- src/probe/frameworks.rs
++++ replace == with != in level6_direct_api
+@@ -181,17 +181,17 @@
+                 which_port: i32,
+                 special_port: *mut mach_port_t,
+             ) -> kern_return_t;
+         }
+ 
+         const TASK_BOOTSTRAP_PORT: i32 = 4;
+         let mut bp: mach_port_t = 0;
+         let kr = task_get_special_port(mach_task_self(), TASK_BOOTSTRAP_PORT, &mut bp);
+-        if kr == KERN_SUCCESS {
++        if kr != /* ~ changed by cargo-mutants ~ */ KERN_SUCCESS {
+             println!("  [+] Got bootstrap port: {:#x}", bp);
+ 
+             let svc_name = std::ffi::CString::new("com.apple.appleneuralengine").unwrap();
+             let mut svc_port: mach_port_t = 0;
+             let kr2 = bootstrap_look_up(bp, svc_name.as_ptr(), &mut svc_port);
+             if kr2 == KERN_SUCCESS {
+                 println!(
+                     "  [+] com.apple.appleneuralengine => port {:#x} *** REACHABLE ***",

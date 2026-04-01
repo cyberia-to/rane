@@ -1,0 +1,70 @@
+
+*** src/mil/mod.rs:88:5: replace matmul -> Source with Default::default()
+
+*** mutation diff:
+--- src/mil/mod.rs
++++ replace matmul -> Source with Default::default()
+@@ -80,27 +80,17 @@
+     *m += &format!("        tensor<fp16, [1,1,{seq},{oc}]> {p}_yh = matmul(transpose_x={p}_bF,transpose_y={p}_bF,x={p}_a3,y={p}_W)[name=string(\"{p}_yh\")];\n");
+     *m += &format!("        tensor<fp16, [1,1,{oc},{seq}]> {p}_yt = transpose(perm={p}_pm,x={p}_yh)[name=string(\"{p}_yt\")];\n");
+     *m += &format!("        tensor<int32, [4]> {p}_ro = const()[name=string(\"{p}_ro\"), val=tensor<int32, [4]>([1,{oc},1,{seq}])];\n");
+     *m += &format!("        tensor<fp16, [1,{oc},1,{seq}]> {p}_y = reshape(shape={p}_ro,x={p}_yt)[name=string(\"{p}_y\")];\n");
+ }
+ 
+ /// Build a simple dynamic matmul MIL: y = x @ W
+ pub fn matmul(ic: usize, oc: usize, seq: usize) -> Source {
+-    let sp = seq + oc;
+-    let mut m = mil_header(ic, sp);
+-    gen_dyn_matmul(&mut m, "mm", ic, oc, seq, 0, seq, "x");
+-    m += &mil_footer("mm_y");
+-    Source {
+-        text: m,
+-        input_channels: ic,
+-        input_spatial: sp,
+-        output_channels: oc,
+-        output_spatial: seq,
+-    }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Build an ANE weight blob: 128-byte header + fp16 data.
+ pub fn pack_weights(fp16_data: &[u16]) -> Vec<u8> {
+     let weight_bytes = fp16_data.len() * 2;
+     let total = 128 + weight_bytes;
+     let mut blob = vec![0u8; total];
+     blob[0] = 1;
+
+
+*** /Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo test --no-run --verbose --package=rane@0.1.0
+       Fresh crossbeam-utils v0.8.21
+       Fresh crossbeam-queue v0.3.12
+       Fresh unimem v0.1.0 (/Users/mastercyb/git/unimem)
+       Fresh acpu v0.1.0 (/Users/mastercyb/git/acpu)
+       Dirty rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp): couldn't read metadata for file `target/debug/deps/librane-9dba0de8bd33b846.rlib`
+   Compiling rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp)
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=a8475b66b1669da5 -C extra-filename=-4caeb28bedddab43 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=93f86e99e3f82980 -C extra-filename=-9dba0de8bd33b846 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rmeta --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rmeta`
+error[E0277]: the trait bound `Source: Default` is not satisfied
+  --> src/mil/mod.rs:88:5
+   |
+88 |     Default::default() /* ~ changed by cargo-mutants ~ */
+   |     ^^^^^^^^^^^^^^^^^^ the trait `Default` is not implemented for `Source`
+   |
+help: consider annotating `Source` with `#[derive(Default)]`
+   |
+13 + #[derive(Default)]
+14 | pub struct Source {
+   |
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `rane` (lib test) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=a8475b66b1669da5 -C extra-filename=-4caeb28bedddab43 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib` (exit status: 1)
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `rane` (lib) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=93f86e99e3f82980 -C extra-filename=-9dba0de8bd33b846 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libacpu-356fb24183414b8b.rmeta --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-abUyAo.tmp/target/debug/deps/libunimem-5f3db965c562320d.rmeta` (exit status: 1)
+
+*** result: Failure(101)

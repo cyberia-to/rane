@@ -1,0 +1,21 @@
+--- src/probe/compile.rs
++++ delete ! in try_objc_compile
+@@ -204,17 +204,17 @@
+         println!("  [+] Model created!");
+ 
+         // Get hex identifier for temp dir
+         let get_str: MsgSendStr = std::mem::transmute(objc_msgSend as *const c_void);
+         let hex_id = get_str(model, sel("hexStringIdentifier"));
+         let hex_str = if !hex_id.is_null() {
+             let utf8_fn: MsgSendUtf8 = std::mem::transmute(objc_msgSend as *const c_void);
+             let cstr = utf8_fn(hex_id, sel("UTF8String"));
+-            if !cstr.is_null() {
++            if  /* ~ changed by cargo-mutants ~ */cstr.is_null() {
+                 CStr::from_ptr(cstr).to_string_lossy().into_owned()
+             } else {
+                 "unknown".to_string()
+             }
+         } else {
+             "unknown".to_string()
+         };
+         println!("  [+] Model hex ID: {}", hex_str);

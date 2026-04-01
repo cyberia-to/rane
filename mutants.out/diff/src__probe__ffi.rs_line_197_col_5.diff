@@ -1,0 +1,24 @@
+--- src/probe/ffi.rs
++++ replace cf_str -> CFStringRef with Default::default()
+@@ -189,20 +189,17 @@
+     pub fn CFArrayGetCount(array: *const c_void) -> i64;
+ }
+ 
+ // ============================================================
+ // Helper functions
+ // ============================================================
+ 
+ pub fn cf_str(s: &str) -> CFStringRef {
+-    unsafe {
+-        let c = std::ffi::CString::new(s).unwrap();
+-        CFStringCreateWithCString(ptr::null(), c.as_ptr(), kCFStringEncodingUTF8)
+-    }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn cf_num(v: i32) -> *const c_void {
+     unsafe {
+         CFNumberCreate(
+             ptr::null(),
+             kCFNumberSInt32Type,
+             &v as *const i32 as *const c_void,

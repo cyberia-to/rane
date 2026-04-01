@@ -1,0 +1,21 @@
+--- src/surface.rs
++++ replace Buffer::as_raw -> IOSurfaceRef with Default::default()
+@@ -91,17 +91,17 @@
+             let result = f(slice);
+             IOSurfaceUnlock(self.raw, 1, ptr::null_mut());
+             result
+         }
+     }
+ 
+     /// Get the raw IOSurfaceRef for passing to `Program::run_direct()`.
+     pub fn as_raw(&self) -> IOSurfaceRef {
+-        self.raw
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// IOSurface ID.
+     pub fn id(&self) -> u32 {
+         unsafe { IOSurfaceGetID(self.raw) }
+     }
+ 
+     /// Allocation size in bytes.

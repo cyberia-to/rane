@@ -1,0 +1,21 @@
+--- src/model.rs
++++ delete ! in Program::unload
+@@ -205,17 +205,17 @@
+             return Ok(());
+         }
+         unsafe {
+             let mut error: ObjcId = ptr::null_mut();
+             type UnloadFn = unsafe extern "C" fn(ObjcId, ObjcSel, u32, *mut ObjcId) -> bool;
+             let f: UnloadFn = std::mem::transmute(objc_msgSend as *const c_void);
+             let ok = f(self.objc_model, sel("unloadWithQoS:error:"), 21, &mut error);
+             self.loaded = false;
+-            if !ok {
++            if  /* ~ changed by cargo-mutants ~ */ok {
+                 let msg = nserror_string(error).unwrap_or_else(|| "unknown error".into());
+                 return Err(AneError::UnloadFailed(msg));
+             }
+             Ok(())
+         }
+     }
+ }
+ 

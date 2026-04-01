@@ -1,0 +1,85 @@
+--- src/probe/frameworks.rs
++++ replace level6_direct_api with ()
+@@ -126,81 +126,10 @@
+     })
+ }
+ 
+ // ============================================================
+ // Level 6: Architecture Discovery + XPC detection
+ // ============================================================
+ 
+ pub(crate) fn level6_direct_api() {
+-    println!("\n═══════════════════════════════════════════════════");
+-    println!("  LEVEL 6: Architecture Discovery");
+-    println!("═══════════════════════════════════════════════════\n");
+-
+-    println!("  Communication path discovered:");
+-    println!("    Your code");
+-    println!("      → AppleNeuralEngine.framework (_ANEInMemoryModel etc.)");
+-    println!("      → XPC to 'com.apple.appleneuralengine' (Mach service)");
+-    println!("      → aned daemon (/usr/libexec/aned)");
+-    println!("      → IOKit H11ANEIn (entitlement: com.apple.ane.iokit-user-access)");
+-    println!("      → ANE hardware\n");
+-
+-    println!("  IOKit selectors return kIOReturnNotPermitted because");
+-    println!("  our process lacks com.apple.ane.iokit-user-access entitlement.");
+-    println!("  Only aned has this. All user code goes through XPC.\n");
+-
+-    // _ANEDaemonInterface — returns NSXPCInterface describing the protocol
+-    let daemon_iface = find_sym("_ANEDaemonInterface");
+-    if !daemon_iface.is_null() {
+-        println!("  [+] _ANEDaemonInterface @ {:?}", daemon_iface);
+-        println!("      This returns the NSXPCInterface for talking to aned.");
+-        println!("      The ObjC classes wrap this, but we could call it directly.");
+-    }
+-
+-    let daemon_iface_private = find_sym("_ANEDaemonInterfacePrivate");
+-    if !daemon_iface_private.is_null() {
+-        println!(
+-            "  [+] _ANEDaemonInterfacePrivate @ {:?}",
+-            daemon_iface_private
+-        );
+-    }
+-
+-    // Check if we can connect to the XPC service from Rust
+-    // Using bootstrap_look_up to find the mach port
+-    println!("\n  [*] Checking XPC service reachability...");
+-    unsafe {
+-        extern "C" {
+-            fn bootstrap_look_up(
+-                bp: mach_port_t,
+-                service_name: *const c_char,
+-                sp: *mut mach_port_t,
+-            ) -> kern_return_t;
+-            fn bootstrap_port() -> mach_port_t;
+-
+-            // We can access bootstrap_port via task_get_special_port
+-            fn task_get_special_port(
+-                task: mach_port_t,
+-                which_port: i32,
+-                special_port: *mut mach_port_t,
+-            ) -> kern_return_t;
+-        }
+-
+-        const TASK_BOOTSTRAP_PORT: i32 = 4;
+-        let mut bp: mach_port_t = 0;
+-        let kr = task_get_special_port(mach_task_self(), TASK_BOOTSTRAP_PORT, &mut bp);
+-        if kr == KERN_SUCCESS {
+-            println!("  [+] Got bootstrap port: {:#x}", bp);
+-
+-            let svc_name = std::ffi::CString::new("com.apple.appleneuralengine").unwrap();
+-            let mut svc_port: mach_port_t = 0;
+-            let kr2 = bootstrap_look_up(bp, svc_name.as_ptr(), &mut svc_port);
+-            if kr2 == KERN_SUCCESS {
+-                println!(
+-                    "  [+] com.apple.appleneuralengine => port {:#x} *** REACHABLE ***",
+-                    svc_port
+-                );
+-                println!("      This is the Mach port to aned. XPC talks here.");
+-            } else {
+-                println!("  [-] bootstrap_look_up failed: {}", kr2);
+-            }
+-        }
+-    }
++    () /* ~ changed by cargo-mutants ~ */
+ }

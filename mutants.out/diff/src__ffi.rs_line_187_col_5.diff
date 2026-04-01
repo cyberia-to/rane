@@ -1,0 +1,22 @@
+--- src/ffi.rs
++++ replace cls -> ObjcClass with Default::default()
+@@ -179,18 +179,17 @@
+ }
+ 
+ pub fn sel(name: &str) -> ObjcSel {
+     let c = std::ffi::CString::new(name).unwrap();
+     unsafe { sel_registerName(c.as_ptr()) }
+ }
+ 
+ pub fn cls(name: &str) -> ObjcClass {
+-    let c = std::ffi::CString::new(name).unwrap();
+-    unsafe { objc_getClass(c.as_ptr()) }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn nserror_string(err: ObjcId) -> Option<String> {
+     if err.is_null() {
+         return None;
+     }
+     unsafe {
+         type MsgSendId = unsafe extern "C" fn(ObjcId, ObjcSel) -> ObjcId;

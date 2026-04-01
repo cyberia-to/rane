@@ -1,0 +1,21 @@
+--- src/surface.rs
++++ replace / with * in Buffer::read
+@@ -81,17 +81,17 @@
+     /// Lock surface (read-only), call closure with fp16 slice, unlock.
+     pub fn read<F, R>(&self, f: F) -> R
+     where
+         F: FnOnce(&[u16]) -> R,
+     {
+         unsafe {
+             IOSurfaceLock(self.raw, 1, ptr::null_mut()); // kIOSurfaceLockReadOnly = 1
+             let base = IOSurfaceGetBaseAddress(self.raw) as *const u16;
+-            let len = self.size / 2;
++            let len = self.size * /* ~ changed by cargo-mutants ~ */ 2;
+             let slice = std::slice::from_raw_parts(base, len);
+             let result = f(slice);
+             IOSurfaceUnlock(self.raw, 1, ptr::null_mut());
+             result
+         }
+     }
+ 
+     /// Get the raw IOSurfaceRef for passing to `Program::run_direct()`.

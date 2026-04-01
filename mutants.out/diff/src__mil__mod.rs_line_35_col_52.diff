@@ -1,0 +1,21 @@
+--- src/mil/mod.rs
++++ replace * with + in Source::output_size
+@@ -27,17 +27,17 @@
+     }
+     pub fn output_shape(&self) -> (usize, usize) {
+         (self.output_channels, self.output_spatial)
+     }
+     pub fn input_size(&self) -> usize {
+         self.input_channels * self.input_spatial * 2
+     }
+     pub fn output_size(&self) -> usize {
+-        self.output_channels * self.output_spatial * 2
++        self.output_channels * self.output_spatial + /* ~ changed by cargo-mutants ~ */ 2
+     }
+ }
+ 
+ /// Start a MIL program with header and function signature.
+ pub fn mil_header(ic: usize, sp: usize) -> String {
+     format!(
+         "program(1.3)\n[buildInfo = dict<string, string>({info})]\n{{\n    func main<ios18>(tensor<fp16, [1, {ic}, 1, {sp}]> x) {{\n",
+         info=MIL_BUILD_INFO, ic=ic, sp=sp,

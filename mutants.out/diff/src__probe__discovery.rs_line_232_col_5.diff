@@ -1,0 +1,36 @@
+--- src/probe/discovery.rs
++++ replace level4_make_surface -> IOSurfaceRef with Default::default()
+@@ -224,32 +224,10 @@
+         IOSurfaceUnlock(surface, 0, ptr::null_mut());
+ 
+         Some(surface)
+     }
+ }
+ 
+ /// Helper: create IOSurface of given byte size
+ pub(crate) fn level4_make_surface(bytes: usize) -> IOSurfaceRef {
+-    unsafe {
+-        let dict = CFDictionaryCreateMutable(
+-            ptr::null(),
+-            0,
+-            &kCFTypeDictionaryKeyCallBacks as *const c_void,
+-            &kCFTypeDictionaryValueCallBacks as *const c_void,
+-        );
+-        CFDictionarySetValue(dict, cf_str("IOSurfaceWidth") as _, cf_num(bytes as i32));
+-        CFDictionarySetValue(dict, cf_str("IOSurfaceHeight") as _, cf_num(1));
+-        CFDictionarySetValue(dict, cf_str("IOSurfaceBytesPerElement") as _, cf_num(1));
+-        CFDictionarySetValue(
+-            dict,
+-            cf_str("IOSurfaceBytesPerRow") as _,
+-            cf_num(bytes as i32),
+-        );
+-        CFDictionarySetValue(
+-            dict,
+-            cf_str("IOSurfaceAllocSize") as _,
+-            cf_num(bytes as i32),
+-        );
+-        CFDictionarySetValue(dict, cf_str("IOSurfacePixelFormat") as _, cf_num(0));
+-        IOSurfaceCreate(dict)
+-    }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }

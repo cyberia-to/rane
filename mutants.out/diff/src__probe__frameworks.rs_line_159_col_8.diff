@@ -1,0 +1,21 @@
+--- src/probe/frameworks.rs
++++ delete ! in level6_direct_api
+@@ -151,17 +151,17 @@
+     let daemon_iface = find_sym("_ANEDaemonInterface");
+     if !daemon_iface.is_null() {
+         println!("  [+] _ANEDaemonInterface @ {:?}", daemon_iface);
+         println!("      This returns the NSXPCInterface for talking to aned.");
+         println!("      The ObjC classes wrap this, but we could call it directly.");
+     }
+ 
+     let daemon_iface_private = find_sym("_ANEDaemonInterfacePrivate");
+-    if !daemon_iface_private.is_null() {
++    if  /* ~ changed by cargo-mutants ~ */daemon_iface_private.is_null() {
+         println!(
+             "  [+] _ANEDaemonInterfacePrivate @ {:?}",
+             daemon_iface_private
+         );
+     }
+ 
+     // Check if we can connect to the XPC service from Rust
+     // Using bootstrap_look_up to find the mach port

@@ -1,0 +1,36 @@
+--- src/model.rs
++++ replace Program::load -> Result<(), AneError> with Ok(())
+@@ -131,32 +131,17 @@
+             })
+         }
+     }
+ 
+     /// Load the compiled model into ANE hardware.
+     pub fn load(&mut self) -> Result<(), AneError> {
+         // SAFETY: objc_msgSend transmuted to match loadWithQoS:options:error: signature.
+         // self.objc_model is valid (created in compile). Error pointer checked on failure.
+-        unsafe {
+-            let mut error: ObjcId = ptr::null_mut();
+-            let ok = msg_send_compile(
+-                self.objc_model,
+-                "loadWithQoS:options:error:",
+-                21,
+-                self.empty_dict,
+-                &mut error,
+-            );
+-            if !ok {
+-                let msg = nserror_string(error).unwrap_or_else(|| "unknown error".into());
+-                return Err(AneError::LoadFailed(msg));
+-            }
+-            self.loaded = true;
+-            Ok(())
+-        }
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Run the model on ANE hardware.
+     /// Input and output must be `Buffer` with correct sizes for the MIL program.
+     pub fn run(&self, input: &Buffer, output: &Buffer) -> Result<(), AneError> {
+         unsafe { self.run_direct(input.as_raw(), output.as_raw()) }
+     }
+ 

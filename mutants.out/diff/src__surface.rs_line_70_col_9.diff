@@ -1,0 +1,29 @@
+--- src/surface.rs
++++ replace Buffer::write -> R with Default::default()
+@@ -62,25 +62,17 @@
+         Self::new(channels * spatial * 2)
+     }
+ 
+     /// Lock surface, call closure with mutable fp16 slice, unlock.
+     pub fn write<F, R>(&self, f: F) -> R
+     where
+         F: FnOnce(&mut [u16]) -> R,
+     {
+-        unsafe {
+-            IOSurfaceLock(self.raw, 0, ptr::null_mut());
+-            let base = IOSurfaceGetBaseAddress(self.raw) as *mut u16;
+-            let len = self.size / 2;
+-            let slice = std::slice::from_raw_parts_mut(base, len);
+-            let result = f(slice);
+-            IOSurfaceUnlock(self.raw, 0, ptr::null_mut());
+-            result
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Lock surface (read-only), call closure with fp16 slice, unlock.
+     pub fn read<F, R>(&self, f: F) -> R
+     where
+         F: FnOnce(&[u16]) -> R,
+     {
+         unsafe {

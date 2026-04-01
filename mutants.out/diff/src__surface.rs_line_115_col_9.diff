@@ -1,0 +1,20 @@
+--- src/surface.rs
++++ replace <impl Drop for Buffer>::drop with ()
+@@ -107,16 +107,14 @@
+     /// Allocation size in bytes.
+     pub fn size(&self) -> usize {
+         self.size
+     }
+ }
+ 
+ impl Drop for Buffer {
+     fn drop(&mut self) {
+-        unsafe {
+-            CFRelease(self.raw as CFTypeRef);
+-        }
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ // fp16 conversion functions: use acpu::{fp16_to_f32, f32_to_fp16, cast_f16_f32, cast_f32_f16}
+ // Re-exported from acpu via lib.rs — single source of truth.

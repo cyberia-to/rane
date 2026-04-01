@@ -1,0 +1,109 @@
+
+*** src/probe/compile.rs:275:24: delete ! in try_objc_compile
+
+*** mutation diff:
+--- src/probe/compile.rs
++++ delete ! in try_objc_compile
+@@ -267,17 +267,17 @@
+         } else {
+             println!("  [-] Compilation failed");
+             if !error.is_null() {
+                 let desc_fn: MsgSendStr = std::mem::transmute(objc_msgSend as *const c_void);
+                 let desc = desc_fn(error, sel("description"));
+                 if !desc.is_null() {
+                     let utf8_fn: MsgSendUtf8 = std::mem::transmute(objc_msgSend as *const c_void);
+                     let cstr = utf8_fn(desc, sel("UTF8String"));
+-                    if !cstr.is_null() {
++                    if  /* ~ changed by cargo-mutants ~ */cstr.is_null() {
+                         println!("      Error: {}", CStr::from_ptr(cstr).to_string_lossy());
+                     }
+                 }
+             }
+             false
+         }
+     }
+ }
+
+
+*** /Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo test --no-run --verbose --package=rane@0.1.0
+       Fresh crossbeam-utils v0.8.21
+       Fresh crossbeam-queue v0.3.12
+       Fresh unimem v0.1.0 (/Users/mastercyb/git/unimem)
+       Fresh acpu v0.1.0 (/Users/mastercyb/git/acpu)
+       Dirty rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp): the file `src/probe/compile.rs` has changed (1775043320.369873292s, 3s after last build at 1775043317.100127491s)
+   Compiling rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp)
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane_probe --edition=2021 src/probe/main.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=4bc42abd1761e143 -C extra-filename=-389f422620ed0214 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern rane=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/librane-9dba0de8bd33b846.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane_probe --edition=2021 src/probe/main.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=fba5b9fcd8f4be69 -C extra-filename=-d97ac62dd57c62e6 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern rane=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/librane-9dba0de8bd33b846.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.24s
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/rane-4caeb28bedddab43`
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/rane_probe-389f422620ed0214`
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/hardware-c302cd964cd4bbc6`
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/integration-1f8fc362df896cd8`
+
+*** result: Success
+
+*** /Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo test --verbose --package=rane@0.1.0
+       Fresh crossbeam-utils v0.8.21
+       Fresh crossbeam-queue v0.3.12
+       Fresh unimem v0.1.0 (/Users/mastercyb/git/unimem)
+       Fresh acpu v0.1.0 (/Users/mastercyb/git/acpu)
+       Fresh rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/rane-4caeb28bedddab43`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/rane_probe-389f422620ed0214`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/hardware-c302cd964cd4bbc6`
+
+running 8 tests
+test compile_load_run_identity ... ok
+test compile_load_unload ... ok
+test double_unload_is_safe ... ok
+test matmul_various_sizes ... ok
+test multiple_runs_same_model ... ok
+test run_direct_with_raw_surfaces ... ok
+test run_direct_with_unimem_block ... ok
+test run_without_load_fails ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.76s
+
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/integration-1f8fc362df896cd8`
+
+running 16 tests
+test buffer_oversized_is_err ... ok
+test ane_error_display_variants ... ok
+test buffer_zero_size_is_err ... ok
+test fp16_roundtrip_exact ... ok
+test mil_header_contains_keywords ... ok
+test gen_dyn_matmul_produces_mil_ops ... ok
+test mil_matmul_shape ... ok
+test mil_matmul_text_is_valid ... ok
+test pack_weights_empty ... ok
+test pack_weights_length_and_header ... ok
+test surface_bounds_check ... ok
+test mil_footer_contains_closing ... ok
+test fp16_bulk_conversion ... ok
+test surface_with_shape ... ok
+test surface_write_read_roundtrip ... ok
+test surface_create_and_size ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+   Doc-tests rane
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustdoc --edition=2021 --crate-type lib --color auto --crate-name rane --test src/lib.rs --test-run-directory /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern rane=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/librane-9dba0de8bd33b846.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-aQoUDA.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib -C embed-bitcode=no --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' --error-format human`
+
+running 1 test
+test src/lib.rs - (line 8) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+
+*** result: Success

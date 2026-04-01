@@ -1,0 +1,21 @@
+--- src/model.rs
++++ delete ! in Program::load
+@@ -140,17 +140,17 @@
+             let mut error: ObjcId = ptr::null_mut();
+             let ok = msg_send_compile(
+                 self.objc_model,
+                 "loadWithQoS:options:error:",
+                 21,
+                 self.empty_dict,
+                 &mut error,
+             );
+-            if !ok {
++            if  /* ~ changed by cargo-mutants ~ */ok {
+                 let msg = nserror_string(error).unwrap_or_else(|| "unknown error".into());
+                 return Err(AneError::LoadFailed(msg));
+             }
+             self.loaded = true;
+             Ok(())
+         }
+     }
+ 

@@ -1,0 +1,33 @@
+--- src/lib.rs
++++ replace <impl std::fmt::Display for AneError>::fmt -> std::fmt::Result with Ok(Default::default())
+@@ -77,29 +77,17 @@
+     /// SRAM release failed.
+     UnloadFailed(String),
+     /// Filesystem error (temp directory, weight file I/O).
+     Io(std::io::Error),
+ }
+ 
+ impl std::fmt::Display for AneError {
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+-        match self {
+-            AneError::SurfaceCreationFailed(msg) => {
+-                write!(f, "IOSurface creation failed: {}", msg)
+-            }
+-            AneError::ClassNotFound(name) => write!(f, "ObjC class not found: {}", name),
+-            AneError::DescriptorCreationFailed => write!(f, "Model descriptor creation failed"),
+-            AneError::ModelCreationFailed => write!(f, "Model creation failed"),
+-            AneError::CompilationFailed(msg) => write!(f, "Compilation failed: {}", msg),
+-            AneError::LoadFailed(msg) => write!(f, "Load failed: {}", msg),
+-            AneError::EvalFailed(msg) => write!(f, "Evaluation failed: {}", msg),
+-            AneError::UnloadFailed(msg) => write!(f, "Unload failed: {}", msg),
+-            AneError::Io(e) => write!(f, "IO error: {}", e),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl std::error::Error for AneError {}
+ 
+ impl From<std::io::Error> for AneError {
+     fn from(e: std::io::Error) -> Self {
+         AneError::Io(e)

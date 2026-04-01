@@ -1,0 +1,30 @@
+--- src/mil/mod.rs
++++ replace pack_weights -> Vec<u8> with vec![0]
+@@ -95,26 +95,10 @@
+         input_spatial: sp,
+         output_channels: oc,
+         output_spatial: seq,
+     }
+ }
+ 
+ /// Build an ANE weight blob: 128-byte header + fp16 data.
+ pub fn pack_weights(fp16_data: &[u16]) -> Vec<u8> {
+-    let weight_bytes = fp16_data.len() * 2;
+-    let total = 128 + weight_bytes;
+-    let mut blob = vec![0u8; total];
+-    blob[0] = 1;
+-    blob[4] = 2;
+-    blob[64] = 0xEF;
+-    blob[65] = 0xBE;
+-    blob[66] = 0xAD;
+-    blob[67] = 0xDE;
+-    blob[68] = 1;
+-    blob[72..76].copy_from_slice(&(weight_bytes as u32).to_le_bytes());
+-    blob[80..84].copy_from_slice(&128u32.to_le_bytes());
+-    for (i, &val) in fp16_data.iter().enumerate() {
+-        let off = 128 + i * 2;
+-        blob[off..off + 2].copy_from_slice(&val.to_le_bytes());
+-    }
+-    blob
++    vec![0] /* ~ changed by cargo-mutants ~ */
+ }

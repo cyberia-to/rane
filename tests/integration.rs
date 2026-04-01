@@ -9,26 +9,38 @@ use rane::{f32_to_fp16, fp16_to_f32, Buffer};
 #[test]
 fn surface_create_and_size() {
     let s = Buffer::new(4096).unwrap();
-    assert!(s.size() >= 4096);
+    assert_eq!(s.size(), 4096, "exact size for 4096 bytes");
     assert!(s.id() > 0);
+    // two surfaces must have different ids
+    let s2 = Buffer::new(4096).unwrap();
+    assert_ne!(s.id(), s2.id(), "surface ids must be unique");
 }
 
 #[test]
 fn surface_with_shape() {
+    // with_shape(ch, sp) must allocate exactly ch * sp * 2 bytes (fp16)
     let s = Buffer::with_shape(64, 128).unwrap();
-    assert!(s.size() >= 64 * 128 * 2);
+    assert_eq!(s.size(), 64 * 128 * 2, "with_shape size must be ch*sp*2");
+    // different shapes produce different sizes
+    let s2 = Buffer::with_shape(32, 64).unwrap();
+    assert_eq!(s2.size(), 32 * 64 * 2);
+    assert_ne!(s.size(), s2.size());
 }
 
 #[test]
 fn surface_write_read_roundtrip() {
-    let s = Buffer::new(256 * 2).unwrap();
+    let n_elements = 256usize;
+    let s = Buffer::new(n_elements * 2).unwrap();
+    // verify slice length matches expected element count
     s.write(|d| {
-        for i in 0..256 {
+        assert_eq!(d.len(), n_elements, "write slice length must be size/2");
+        for i in 0..n_elements {
             d[i] = f32_to_fp16(i as f32);
         }
     });
     s.read(|d| {
-        for i in 0..256 {
+        assert_eq!(d.len(), n_elements, "read slice length must be size/2");
+        for i in 0..n_elements {
             let val = fp16_to_f32(d[i]);
             assert!((val - i as f32).abs() < 0.5, "mismatch at {}: {}", i, val);
         }

@@ -1,0 +1,20 @@
+--- src/probe/ffi.rs
++++ replace sel -> ObjcSel with Default::default()
+@@ -235,16 +235,15 @@
+         let mut buf = [0i8; 4096];
+         CFStringGetCString(desc, buf.as_mut_ptr(), 4096, kCFStringEncodingUTF8);
+         CFRelease(desc);
+         CStr::from_ptr(buf.as_ptr()).to_string_lossy().into_owned()
+     }
+ }
+ 
+ pub fn sel(name: &str) -> ObjcSel {
+-    let c = std::ffi::CString::new(name).unwrap();
+-    unsafe { sel_registerName(c.as_ptr()) }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn cls(name: &str) -> ObjcClass {
+     let c = std::ffi::CString::new(name).unwrap();
+     unsafe { objc_getClass(c.as_ptr()) }
+ }

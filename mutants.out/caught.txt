@@ -1,0 +1,80 @@
+src/lib.rs:85:9: replace <impl std::fmt::Display for AneError>::fmt -> std::fmt::Result with Ok(Default::default())
+src/ffi.rs:165:5: replace cf_str -> CFStringRef with Default::default()
+src/ffi.rs:172:5: replace cf_num -> *const c_void with Default::default()
+src/ffi.rs:187:5: replace cls -> ObjcClass with Default::default()
+src/ffi.rs:213:5: replace kern_err -> String with String::new()
+src/ffi.rs:219:9: delete match arm KIO_NOT_READY in kern_err
+src/mil/mod.rs:23:9: replace Source::as_str -> &str with ""
+src/mil/mod.rs:23:9: replace Source::as_str -> &str with "xyzzy"
+src/mil/mod.rs:26:9: replace Source::input_shape -> (usize, usize) with (0, 0)
+src/mil/mod.rs:26:9: replace Source::input_shape -> (usize, usize) with (0, 1)
+src/mil/mod.rs:26:9: replace Source::input_shape -> (usize, usize) with (1, 0)
+src/mil/mod.rs:26:9: replace Source::input_shape -> (usize, usize) with (1, 1)
+src/mil/mod.rs:29:9: replace Source::output_shape -> (usize, usize) with (0, 0)
+src/mil/mod.rs:29:9: replace Source::output_shape -> (usize, usize) with (0, 1)
+src/mil/mod.rs:29:9: replace Source::output_shape -> (usize, usize) with (1, 0)
+src/mil/mod.rs:29:9: replace Source::output_shape -> (usize, usize) with (1, 1)
+src/mil/mod.rs:32:9: replace Source::input_size -> usize with 0
+src/mil/mod.rs:32:9: replace Source::input_size -> usize with 1
+src/mil/mod.rs:32:50: replace * with + in Source::input_size
+src/mil/mod.rs:32:50: replace * with / in Source::input_size
+src/mil/mod.rs:32:29: replace * with + in Source::input_size
+src/mil/mod.rs:32:29: replace * with / in Source::input_size
+src/mil/mod.rs:35:9: replace Source::output_size -> usize with 0
+src/mil/mod.rs:35:9: replace Source::output_size -> usize with 1
+src/mil/mod.rs:35:52: replace * with + in Source::output_size
+src/mil/mod.rs:35:52: replace * with / in Source::output_size
+src/mil/mod.rs:35:30: replace * with + in Source::output_size
+src/mil/mod.rs:35:30: replace * with / in Source::output_size
+src/mil/mod.rs:41:5: replace mil_header -> String with String::new()
+src/mil/mod.rs:41:5: replace mil_header -> String with "xyzzy".into()
+src/mil/mod.rs:49:5: replace mil_footer -> String with String::new()
+src/mil/mod.rs:49:5: replace mil_footer -> String with "xyzzy".into()
+src/mil/mod.rs:65:5: replace gen_dyn_matmul with ()
+src/mil/mod.rs:88:18: replace + with - in matmul
+src/mil/mod.rs:88:18: replace + with * in matmul
+src/mil/mod.rs:103:5: replace pack_weights -> Vec<u8> with vec![]
+src/mil/mod.rs:103:5: replace pack_weights -> Vec<u8> with vec![0]
+src/mil/mod.rs:103:5: replace pack_weights -> Vec<u8> with vec![1]
+src/mil/mod.rs:103:40: replace * with + in pack_weights
+src/mil/mod.rs:103:40: replace * with / in pack_weights
+src/mil/mod.rs:104:21: replace + with - in pack_weights
+src/mil/mod.rs:104:21: replace + with * in pack_weights
+src/mil/mod.rs:116:23: replace + with - in pack_weights
+src/mil/mod.rs:116:23: replace + with * in pack_weights
+src/mil/mod.rs:117:23: replace + with - in pack_weights
+src/mil/mod.rs:116:27: replace * with + in pack_weights
+src/mil/mod.rs:116:27: replace * with / in pack_weights
+src/mil/mod.rs:117:23: replace + with * in pack_weights
+src/model.rs:121:16: delete ! in Program::compile
+src/model.rs:139:9: replace Program::load -> Result<(), AneError> with Ok(())
+src/model.rs:148:16: delete ! in Program::load
+src/model.rs:160:9: replace Program::run -> Result<(), AneError> with Ok(())
+src/model.rs:213:16: delete ! in Program::unload
+src/model.rs:232:5: replace load_ane_frameworks with ()
+src/model.rs:249:5: replace objc_nsstring_to_rust -> Option<String> with None
+src/model.rs:249:5: replace objc_nsstring_to_rust -> Option<String> with Some(String::new())
+src/model.rs:249:5: replace objc_nsstring_to_rust -> Option<String> with Some("xyzzy".into())
+src/model.rs:300:5: replace build_weights_dict -> ObjcId with Default::default()
+src/surface.rs:19:49: replace * with /
+src/surface.rs:19:42: replace * with /
+src/surface.rs:62:38: replace * with + in Buffer::with_shape
+src/surface.rs:62:38: replace * with / in Buffer::with_shape
+src/surface.rs:62:28: replace * with + in Buffer::with_shape
+src/surface.rs:62:28: replace * with / in Buffer::with_shape
+src/surface.rs:73:33: replace / with % in Buffer::write
+src/surface.rs:89:33: replace / with % in Buffer::read
+src/surface.rs:99:9: replace Buffer::as_raw -> IOSurfaceRef with Default::default()
+src/surface.rs:104:9: replace Buffer::id -> u32 with 0
+src/surface.rs:109:9: replace Buffer::size -> usize with 0
+src/surface.rs:109:9: replace Buffer::size -> usize with 1
+src/probe/compile.rs:18:21: replace + with * in pack_weights
+src/probe/compile.rs:36:23: replace + with - in pack_weights
+src/probe/compile.rs:124:5: replace try_anec_compile -> bool with false
+src/probe/discovery.rs:56:32: replace == with != in level1_discover
+src/probe/discovery.rs:139:63: replace && with || in level3_probe
+src/probe/discovery.rs:139:76: replace != with == in level3_probe
+src/probe/discovery.rs:144:34: replace == with != in level3_probe
+src/probe/discovery.rs:191:33: replace * with / in level4_surface
+src/probe/discovery.rs:232:5: replace level4_make_surface -> IOSurfaceRef with Default::default()
+src/probe/ffi.rs:227:5: replace cf_desc -> String with String::new()

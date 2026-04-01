@@ -1,0 +1,21 @@
+--- src/probe/discovery.rs
++++ delete ! in level4_surface
+@@ -210,17 +210,17 @@
+             alloc,
+             alloc as f64 / 1024.0
+         );
+         println!("      Shape  = [1, {}, 1, {}] fp16", channels, spatial);
+ 
+         // Write recognizable pattern
+         IOSurfaceLock(surface, 0, ptr::null_mut());
+         let base = IOSurfaceGetBaseAddress(surface) as *mut u16;
+-        if !base.is_null() {
++        if  /* ~ changed by cargo-mutants ~ */base.is_null() {
+             for i in 0..(channels * spatial) as usize {
+                 *base.add(i) = 0x3C00; // fp16(1.0)
+             }
+             println!("      Wrote {} fp16 values = 1.0 each", channels * spatial);
+         }
+         IOSurfaceUnlock(surface, 0, ptr::null_mut());
+ 
+         Some(surface)

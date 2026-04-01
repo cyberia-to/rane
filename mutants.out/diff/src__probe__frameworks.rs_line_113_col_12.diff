@@ -1,0 +1,21 @@
+--- src/probe/frameworks.rs
++++ delete ! in level5_frameworks
+@@ -105,17 +105,17 @@
+         // Validation
+         "ANEValidateMILNetworkOnHost",
+         "ANEValidateNetworkCreate",
+         "ANEGetValidateNetworkSupportedVersion",
+     ];
+ 
+     for sym in &key_symbols {
+         let p = find_sym(sym);
+-        if !p.is_null() {
++        if  /* ~ changed by cargo-mutants ~ */p.is_null() {
+             println!("  [+] {:50} @ {:?}", sym, p);
+         }
+     }
+ 
+     if compiler.is_null() && services.is_null() && engine.is_null() {
+         return None;
+     }
+ 

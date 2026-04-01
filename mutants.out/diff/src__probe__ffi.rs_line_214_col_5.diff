@@ -1,0 +1,30 @@
+--- src/probe/ffi.rs
++++ replace kern_err -> String with String::new()
+@@ -206,26 +206,17 @@
+             ptr::null(),
+             kCFNumberSInt32Type,
+             &v as *const i32 as *const c_void,
+         )
+     }
+ }
+ 
+ pub fn kern_err(kr: kern_return_t) -> String {
+-    match kr {
+-        0 => "KERN_SUCCESS".into(),
+-        KIO_BAD_ARG => "kIOReturnBadArgument".into(),
+-        KIO_NOT_PRIV => "kIOReturnNotPrivileged".into(),
+-        KIO_UNSUPPORTED => "kIOReturnUnsupported".into(),
+-        KIO_EXCLUSIVE => "kIOReturnExclusiveAccess".into(),
+-        KIO_NOT_READY => "kIOReturnNotReady".into(),
+-        KIO_NOT_PERMITTED => "kIOReturnNotPermitted".into(),
+-        _ => format!("{:#010x}", kr as u32),
+-    }
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn cf_desc(obj: *const c_void) -> String {
+     if obj.is_null() {
+         return "(null)".into();
+     }
+     unsafe {
+         let desc = CFCopyDescription(obj);

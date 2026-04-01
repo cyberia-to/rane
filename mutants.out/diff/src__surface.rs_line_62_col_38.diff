@@ -1,0 +1,21 @@
+--- src/surface.rs
++++ replace * with + in Buffer::with_shape
+@@ -54,17 +54,17 @@
+             }
+             let size = IOSurfaceGetAllocSize(raw);
+             Ok(Buffer { raw, size })
+         }
+     }
+ 
+     /// Create with ANE tensor shape `[1, channels, 1, spatial]` in fp16.
+     pub fn with_shape(channels: usize, spatial: usize) -> Result<Self, AneError> {
+-        Self::new(channels * spatial * 2)
++        Self::new(channels * spatial + /* ~ changed by cargo-mutants ~ */ 2)
+     }
+ 
+     /// Lock surface, call closure with mutable fp16 slice, unlock.
+     pub fn write<F, R>(&self, f: F) -> R
+     where
+         F: FnOnce(&mut [u16]) -> R,
+     {
+         unsafe {

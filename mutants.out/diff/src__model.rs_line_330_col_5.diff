@@ -1,0 +1,30 @@
+--- src/model.rs
++++ replace nsstring -> ObjcId with Default::default()
+@@ -322,26 +322,17 @@
+             set(inner, sel("setObject:forKey:"), nsdata, data_key);
+             set(dict, sel("setObject:forKey:"), inner, key);
+         }
+         dict
+     }
+ }
+ 
+ fn nsstring(s: &str) -> ObjcId {
+-    unsafe {
+-        let cstr = std::ffi::CString::new(s).unwrap();
+-        type F = unsafe extern "C" fn(ObjcId, ObjcSel, *const c_char) -> ObjcId;
+-        let f: F = std::mem::transmute(objc_msgSend as *const c_void);
+-        f(
+-            cls("NSString") as ObjcId,
+-            sel("stringWithUTF8String:"),
+-            cstr.as_ptr(),
+-        )
+-    }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ unsafe fn build_request(io_in: IOSurfaceRef, io_out: IOSurfaceRef) -> Result<ObjcId, AneError> {
+     let cls_aio = cls("_ANEIOSurfaceObject");
+     if cls_aio.is_null() {
+         return Err(AneError::ClassNotFound("_ANEIOSurfaceObject"));
+     }
+     let cls_req = cls("_ANERequest");

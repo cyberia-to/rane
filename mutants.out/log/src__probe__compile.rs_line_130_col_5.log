@@ -1,0 +1,314 @@
+
+*** src/probe/compile.rs:130:5: replace try_objc_compile -> bool with true
+
+*** mutation diff:
+--- src/probe/compile.rs
++++ replace try_objc_compile -> bool with true
+@@ -122,162 +122,10 @@
+     // with no args — they likely require arguments we don't know yet.
+     // Skip pure C API for now, go straight to ObjC runtime path.
+     println!("  [~] Skipping ANECCompile C API (helper functions require");
+     println!("      unknown arguments). Using ObjC runtime instead.");
+     false
+ }
+ 
+ fn try_objc_compile(mil: &str) -> bool {
+-    println!("  Using ObjC runtime from Rust (objc_msgSend — same as training code)");
+-    println!("  No ObjC compiler needed — just C FFI to libobjc\n");
+-
+-    unsafe {
+-        // Get ObjC classes
+-        let cls_descriptor = cls("_ANEInMemoryModelDescriptor");
+-        let cls_model = cls("_ANEInMemoryModel");
+-
+-        if cls_descriptor.is_null() {
+-            println!("  [-] _ANEInMemoryModelDescriptor class not found");
+-            println!("      AppleNeuralEngine.framework might not export it");
+-            return false;
+-        }
+-        println!("  [+] _ANEInMemoryModelDescriptor @ {:?}", cls_descriptor);
+-
+-        if cls_model.is_null() {
+-            println!("  [-] _ANEInMemoryModel class not found");
+-            return false;
+-        }
+-        println!("  [+] _ANEInMemoryModel @ {:?}", cls_model);
+-
+-        // Create NSData from MIL text
+-        let cls_nsdata = cls("NSData");
+-        let mil_bytes = mil.as_bytes();
+-        let data_init: MsgSendDataInit = std::mem::transmute(objc_msgSend as *const c_void);
+-        let mil_data = data_init(
+-            cls_nsdata as *const c_void as *mut c_void,
+-            sel("dataWithBytes:length:"),
+-            mil_bytes.as_ptr(),
+-            mil_bytes.len() as u64,
+-        );
+-        if mil_data.is_null() {
+-            println!("  [-] Failed to create NSData from MIL text");
+-            return false;
+-        }
+-        println!("  [+] NSData(MIL) created ({} bytes)", mil_bytes.len());
+-
+-        // Create empty NSDictionary for weights (identity has no weights)
+-        let cls_nsdict = cls("NSDictionary");
+-        let dict_init: MsgSendInit = std::mem::transmute(objc_msgSend as *const c_void);
+-        let empty_weights = dict_init(
+-            cls_nsdict as *const c_void as *mut c_void,
+-            sel("dictionary"),
+-        );
+-        println!("  [+] Empty weights dict created");
+-
+-        // _ANEInMemoryModelDescriptor.modelWithMILText:weights:optionsPlist:
+-        println!("\n  [*] Creating model descriptor...");
+-        let create_desc: MsgSendDesc = std::mem::transmute(objc_msgSend as *const c_void);
+-        let descriptor = create_desc(
+-            cls_descriptor as *const c_void as *mut c_void,
+-            sel("modelWithMILText:weights:optionsPlist:"),
+-            mil_data,
+-            empty_weights,
+-            ptr::null_mut(), // nil options
+-        );
+-        if descriptor.is_null() {
+-            println!("  [-] modelWithMILText:weights:optionsPlist: returned nil");
+-            return false;
+-        }
+-        println!("  [+] Descriptor created!");
+-
+-        // _ANEInMemoryModel.inMemoryModelWithDescriptor:
+-        println!("  [*] Creating in-memory model...");
+-        let create_model: MsgSendModel = std::mem::transmute(objc_msgSend as *const c_void);
+-        let model = create_model(
+-            cls_model as *const c_void as *mut c_void,
+-            sel("inMemoryModelWithDescriptor:"),
+-            descriptor,
+-        );
+-        if model.is_null() {
+-            println!("  [-] inMemoryModelWithDescriptor: returned nil");
+-            return false;
+-        }
+-        println!("  [+] Model created!");
+-
+-        // Get hex identifier for temp dir
+-        let get_str: MsgSendStr = std::mem::transmute(objc_msgSend as *const c_void);
+-        let hex_id = get_str(model, sel("hexStringIdentifier"));
+-        let hex_str = if !hex_id.is_null() {
+-            let utf8_fn: MsgSendUtf8 = std::mem::transmute(objc_msgSend as *const c_void);
+-            let cstr = utf8_fn(hex_id, sel("UTF8String"));
+-            if !cstr.is_null() {
+-                CStr::from_ptr(cstr).to_string_lossy().into_owned()
+-            } else {
+-                "unknown".to_string()
+-            }
+-        } else {
+-            "unknown".to_string()
+-        };
+-        println!("  [+] Model hex ID: {}", hex_str);
+-
+-        // Set up temp directory (model.mil + weights/)
+-        let tmp_dir = std::env::temp_dir().join(&hex_str);
+-        let _ = std::fs::create_dir_all(tmp_dir.join("weights"));
+-        std::fs::write(tmp_dir.join("model.mil"), mil).unwrap();
+-        println!("  [+] Temp dir: {:?}", tmp_dir);
+-
+-        // Compile: model.compileWithQoS:options:error:
+-        println!("\n  [*] *** COMPILING MIL → ANE BYTECODE ***");
+-        let mut error: ObjcId = ptr::null_mut();
+-        let compile_fn: MsgSendCompile = std::mem::transmute(objc_msgSend as *const c_void);
+-        let ok = compile_fn(
+-            model,
+-            sel("compileWithQoS:options:error:"),
+-            21,            // QoS
+-            empty_weights, // options (empty dict)
+-            &mut error,
+-        );
+-
+-        if ok {
+-            println!("  [+] *** COMPILATION SUCCEEDED! ***");
+-            println!("      MIL → ANE bytecode compiled from pure Rust!");
+-
+-            // Check what files were produced
+-            if let Ok(entries) = std::fs::read_dir(&tmp_dir) {
+-                for entry in entries.flatten() {
+-                    let name = entry.file_name();
+-                    let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+-                    println!("      {:?}: {} bytes", name, size);
+-                    // Recurse one level for subdirs
+-                    if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+-                        if let Ok(sub) = std::fs::read_dir(entry.path()) {
+-                            for se in sub.flatten() {
+-                                let sname = se.file_name();
+-                                let ssize = se.metadata().map(|m| m.len()).unwrap_or(0);
+-                                println!("        {:?}: {} bytes", sname, ssize);
+-                            }
+-                        }
+-                    }
+-                }
+-            }
+-
+-            // Load + evaluate + verify
+-            load_eval_verify(model, empty_weights, compile_fn, &tmp_dir);
+-
+-            true
+-        } else {
+-            println!("  [-] Compilation failed");
+-            if !error.is_null() {
+-                let desc_fn: MsgSendStr = std::mem::transmute(objc_msgSend as *const c_void);
+-                let desc = desc_fn(error, sel("description"));
+-                if !desc.is_null() {
+-                    let utf8_fn: MsgSendUtf8 = std::mem::transmute(objc_msgSend as *const c_void);
+-                    let cstr = utf8_fn(desc, sel("UTF8String"));
+-                    if !cstr.is_null() {
+-                        println!("      Error: {}", CStr::from_ptr(cstr).to_string_lossy());
+-                    }
+-                }
+-            }
+-            false
+-        }
+-    }
++    true /* ~ changed by cargo-mutants ~ */
+ }
+
+
+*** /Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo test --no-run --verbose --package=rane@0.1.0
+       Fresh crossbeam-utils v0.8.21
+       Fresh crossbeam-queue v0.3.12
+       Fresh unimem v0.1.0 (/Users/mastercyb/git/unimem)
+       Fresh acpu v0.1.0 (/Users/mastercyb/git/acpu)
+       Dirty rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp): the file `src/probe/compile.rs` has changed (1775043314.744985825s, 5s after last build at 1775043309.352986303s)
+   Compiling rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp)
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane_probe --edition=2021 src/probe/main.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=4bc42abd1761e143 -C extra-filename=-389f422620ed0214 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern rane=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/librane-9dba0de8bd33b846.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane_probe --edition=2021 src/probe/main.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=fba5b9fcd8f4be69 -C extra-filename=-d97ac62dd57c62e6 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern rane=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/librane-9dba0de8bd33b846.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+warning: unused imports: `MsgSendCompile` and `load_eval_verify`
+ --> src/probe/compile.rs:3:19
+  |
+3 | use super::eval::{load_eval_verify, MsgSendCompile};
+  |                   ^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused imports: `CStr` and `c_void`
+ --> src/probe/compile.rs:5:24
+  |
+5 | use std::ffi::{c_char, c_void, CStr};
+  |                        ^^^^^^  ^^^^
+
+warning: unused import: `std::ptr`
+ --> src/probe/compile.rs:6:5
+  |
+6 | use std::ptr;
+  |     ^^^^^^^^
+
+warning: unused variable: `mil`
+   --> src/probe/compile.rs:129:21
+    |
+129 | fn try_objc_compile(mil: &str) -> bool {
+    |                     ^^^ help: if this is intentional, prefix it with an underscore: `_mil`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `rane` (bin "rane_probe" test) generated 4 warnings (run `cargo fix --bin "rane_probe" --tests` to apply 3 suggestions)
+warning: `rane` (bin "rane_probe") generated 4 warnings (4 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/rane-4caeb28bedddab43`
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/rane_probe-389f422620ed0214`
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/hardware-c302cd964cd4bbc6`
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/integration-1f8fc362df896cd8`
+
+*** result: Success
+
+*** /Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo test --verbose --package=rane@0.1.0
+       Fresh crossbeam-utils v0.8.21
+       Fresh crossbeam-queue v0.3.12
+       Fresh unimem v0.1.0 (/Users/mastercyb/git/unimem)
+       Fresh acpu v0.1.0 (/Users/mastercyb/git/acpu)
+warning: unused imports: `MsgSendCompile` and `load_eval_verify`
+ --> src/probe/compile.rs:3:19
+  |
+3 | use super::eval::{load_eval_verify, MsgSendCompile};
+  |                   ^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused imports: `CStr` and `c_void`
+ --> src/probe/compile.rs:5:24
+  |
+5 | use std::ffi::{c_char, c_void, CStr};
+  |                        ^^^^^^  ^^^^
+
+warning: unused import: `std::ptr`
+ --> src/probe/compile.rs:6:5
+  |
+6 | use std::ptr;
+  |     ^^^^^^^^
+
+warning: unused variable: `mil`
+   --> src/probe/compile.rs:129:21
+    |
+129 | fn try_objc_compile(mil: &str) -> bool {
+    |                     ^^^ help: if this is intentional, prefix it with an underscore: `_mil`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `rane` (bin "rane_probe") generated 4 warnings (run `cargo fix --bin "rane_probe"` to apply 3 suggestions)
+       Fresh rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp)
+warning: `rane` (bin "rane_probe" test) generated 4 warnings (4 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/rane-4caeb28bedddab43`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/rane_probe-389f422620ed0214`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/hardware-c302cd964cd4bbc6`
+
+running 8 tests
+test compile_load_run_identity ... ok
+test double_unload_is_safe ... ok
+test multiple_runs_same_model ... ok
+test matmul_various_sizes ... ok
+test run_direct_with_raw_surfaces ... ok
+test run_direct_with_unimem_block ... ok
+test compile_load_unload ... ok
+test run_without_load_fails ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/integration-1f8fc362df896cd8`
+
+running 16 tests
+test buffer_oversized_is_err ... ok
+test buffer_zero_size_is_err ... ok
+test ane_error_display_variants ... ok
+test fp16_roundtrip_exact ... ok
+test fp16_bulk_conversion ... ok
+test mil_footer_contains_closing ... ok
+test gen_dyn_matmul_produces_mil_ops ... ok
+test mil_header_contains_keywords ... ok
+test mil_matmul_shape ... ok
+test mil_matmul_text_is_valid ... ok
+test pack_weights_empty ... ok
+test pack_weights_length_and_header ... ok
+test surface_bounds_check ... ok
+test surface_create_and_size ... ok
+test surface_write_read_roundtrip ... ok
+test surface_with_shape ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+   Doc-tests rane
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustdoc --edition=2021 --crate-type lib --color auto --crate-name rane --test src/lib.rs --test-run-directory /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern rane=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/librane-9dba0de8bd33b846.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib -C embed-bitcode=no --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' --error-format human`
+
+running 1 test
+test src/lib.rs - (line 8) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+
+*** result: Success

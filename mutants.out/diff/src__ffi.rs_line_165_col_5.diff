@@ -1,0 +1,24 @@
+--- src/ffi.rs
++++ replace cf_str -> CFStringRef with Default::default()
+@@ -157,20 +157,17 @@
+     pub fn objc_getClass(name: *const c_char) -> ObjcClass;
+     pub fn sel_registerName(name: *const c_char) -> ObjcSel;
+     pub fn objc_msgSend() -> ObjcId;
+ }
+ 
+ // ── Helpers ──
+ 
+ pub fn cf_str(s: &str) -> CFStringRef {
+-    unsafe {
+-        let c = std::ffi::CString::new(s).unwrap();
+-        CFStringCreateWithCString(ptr::null(), c.as_ptr(), kCFStringEncodingUTF8)
+-    }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn cf_num(v: i32) -> *const c_void {
+     unsafe {
+         CFNumberCreate(
+             ptr::null(),
+             kCFNumberSInt32Type,
+             &v as *const i32 as *const c_void,

@@ -1,0 +1,123 @@
+
+*** src/mil/mod.rs:29:9: replace Source::output_shape -> (usize, usize) with (0, 0)
+
+*** mutation diff:
+--- src/mil/mod.rs
++++ replace Source::output_shape -> (usize, usize) with (0, 0)
+@@ -21,17 +21,17 @@
+ impl Source {
+     pub fn as_str(&self) -> &str {
+         &self.text
+     }
+     pub fn input_shape(&self) -> (usize, usize) {
+         (self.input_channels, self.input_spatial)
+     }
+     pub fn output_shape(&self) -> (usize, usize) {
+-        (self.output_channels, self.output_spatial)
++        (0, 0) /* ~ changed by cargo-mutants ~ */
+     }
+     pub fn input_size(&self) -> usize {
+         self.input_channels * self.input_spatial * 2
+     }
+     pub fn output_size(&self) -> usize {
+         self.output_channels * self.output_spatial * 2
+     }
+ }
+
+
+*** /Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo test --no-run --verbose --package=rane@0.1.0
+       Fresh crossbeam-utils v0.8.21
+       Fresh crossbeam-queue v0.3.12
+       Fresh unimem v0.1.0 (/Users/mastercyb/git/unimem)
+       Dirty acpu v0.1.0 (/Users/mastercyb/git/acpu): the file `/Users/mastercyb/git/acpu/src/vector/reduce.rs` has changed (1775043009.720280594s, 14s after last build at 1775042995.398355262s)
+   Compiling acpu v0.1.0 (/Users/mastercyb/git/acpu)
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name acpu --edition=2021 /Users/mastercyb/git/acpu/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=ffc11d75ffb7f52c -C extra-filename=-356fb24183414b8b --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libunimem-5f3db965c562320d.rmeta`
+       Dirty rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp): the dependency acpu was rebuilt
+   Compiling rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp)
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=93f86e99e3f82980 -C extra-filename=-9dba0de8bd33b846 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libacpu-356fb24183414b8b.rmeta --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libunimem-5f3db965c562320d.rmeta`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=a8475b66b1669da5 -C extra-filename=-4caeb28bedddab43 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane_probe --edition=2021 src/probe/main.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=4bc42abd1761e143 -C extra-filename=-389f422620ed0214 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern rane=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/librane-9dba0de8bd33b846.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name integration --edition=2021 tests/integration.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=94b69b0735fddee1 -C extra-filename=-1f8fc362df896cd8 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern rane=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/librane-9dba0de8bd33b846.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name hardware --edition=2021 tests/hardware.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=968cc1c1ad917ed6 -C extra-filename=-c302cd964cd4bbc6 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern rane=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/librane-9dba0de8bd33b846.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name rane_probe --edition=2021 src/probe/main.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=fba5b9fcd8f4be69 -C extra-filename=-d97ac62dd57c62e6 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern rane=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/librane-9dba0de8bd33b846.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+     Running `/Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc --crate-name matmul --edition=2021 examples/matmul.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=e817bddc7bf7720a -C extra-filename=-7b35048adee89697 --out-dir /private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/examples -C incremental=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/incremental -L dependency=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps --extern acpu=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libacpu-356fb24183414b8b.rlib --extern rane=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/librane-9dba0de8bd33b846.rlib --extern unimem=/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/libunimem-5f3db965c562320d.rlib`
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.61s
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/rane-4caeb28bedddab43`
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/rane_probe-389f422620ed0214`
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/hardware-c302cd964cd4bbc6`
+  Executable `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/integration-1f8fc362df896cd8`
+
+*** result: Success
+
+*** /Users/mastercyb/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo test --verbose --package=rane@0.1.0
+       Fresh crossbeam-utils v0.8.21
+       Fresh crossbeam-queue v0.3.12
+       Fresh unimem v0.1.0 (/Users/mastercyb/git/unimem)
+       Fresh acpu v0.1.0 (/Users/mastercyb/git/acpu)
+       Fresh rane v0.1.0 (/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/rane-4caeb28bedddab43`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/rane_probe-389f422620ed0214`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/hardware-c302cd964cd4bbc6`
+
+running 8 tests
+test compile_load_unload ... ok
+test compile_load_run_identity ... ok
+test double_unload_is_safe ... ok
+test matmul_various_sizes ... ok
+test multiple_runs_same_model ... ok
+test run_direct_with_raw_surfaces ... ok
+test run_without_load_fails ... ok
+test run_direct_with_unimem_block ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.45s
+
+     Running `/private/var/folders/55/99z672mn2w7_5zwfg60nnvb40000gn/T/cargo-mutants-rane-iNXDRd.tmp/target/debug/deps/integration-1f8fc362df896cd8`
+
+running 16 tests
+test fp16_roundtrip_exact ... ok
+test ane_error_display_variants ... ok
+test buffer_oversized_is_err ... ok
+test buffer_zero_size_is_err ... ok
+test fp16_bulk_conversion ... ok
+test mil_footer_contains_closing ... ok
+test gen_dyn_matmul_produces_mil_ops ... ok
+test mil_header_contains_keywords ... ok
+test mil_matmul_shape ... FAILED
+test mil_matmul_text_is_valid ... ok
+test pack_weights_empty ... ok
+test pack_weights_length_and_header ... ok
+test surface_bounds_check ... ok
+test surface_with_shape ... ok
+test surface_create_and_size ... ok
+test surface_write_read_roundtrip ... ok
+
+failures:
+
+---- mil_matmul_shape stdout ----
+
+thread 'mil_matmul_shape' panicked at tests/integration.rs:83:5:
+assertion `left == right` failed
+  left: (0, 0)
+ right: (64, 64)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    mil_matmul_shape
+
+test result: FAILED. 15 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+error: test failed, to rerun pass `-p rane --test integration`
+
+*** result: Failure(101)

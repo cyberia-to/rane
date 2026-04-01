@@ -1,0 +1,21 @@
+--- src/probe/ffi.rs
++++ delete match arm 0 in kern_err
+@@ -207,17 +207,17 @@
+             kCFNumberSInt32Type,
+             &v as *const i32 as *const c_void,
+         )
+     }
+ }
+ 
+ pub fn kern_err(kr: kern_return_t) -> String {
+     match kr {
+-        0 => "KERN_SUCCESS".into(),
++         /* ~ changed by cargo-mutants ~ */
+         KIO_BAD_ARG => "kIOReturnBadArgument".into(),
+         KIO_NOT_PRIV => "kIOReturnNotPrivileged".into(),
+         KIO_UNSUPPORTED => "kIOReturnUnsupported".into(),
+         KIO_EXCLUSIVE => "kIOReturnExclusiveAccess".into(),
+         KIO_NOT_READY => "kIOReturnNotReady".into(),
+         KIO_NOT_PERMITTED => "kIOReturnNotPermitted".into(),
+         _ => format!("{:#010x}", kr as u32),
+     }
