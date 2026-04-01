@@ -23,13 +23,13 @@ load: upload bytecode into ANE SRAM
 run: dispatch on hardware, block until done
 unload: free SRAM (automatic on drop)
 
-## AneModel
+## Program
 
 the central type. owns a compiled ANE model.
 
 | method | signature | semantics |
 |--------|-----------|-----------|
-| compile | `(program, weights) → Result<AneModel>` | compile MIL to bytecode. weights: `[(&str, &[u8])]` |
+| compile | `(program, weights) → Result<Program>` | compile MIL to bytecode. weights: `[(&str, &[u8])]` |
 | load | `(&mut self) → Result<()>` | upload bytecode to ANE SRAM |
 | run | `(&self, input, output) → Result<()>` | execute on ANE hardware (synchronous) |
 | unload | `(&mut self) → Result<()>` | free SRAM. idempotent |
@@ -56,8 +56,8 @@ shared-memory tensor buffer backed by IOSurface. zero-copy between CPU and ANE.
 |--------|-----------|-----------|
 | new | `(bytes) → Result<Surface>` | allocate by byte size |
 | with_shape | `(channels, spatial) → Result<Surface>` | allocate for `[1, C, 1, S]` fp16 tensor |
-| with_data | `(&self, \|&[u16]\|) → R` | lock, read fp16 data, unlock |
-| with_data_mut | `(&self, \|&mut [u16]\|) → R` | lock, write fp16 data, unlock |
+| read | `(&self, \|&[u16]\|) → R` | lock, read fp16 data, unlock |
+| write | `(&self, \|&mut [u16]\|) → R` | lock, write fp16 data, unlock |
 | id | `(&self) → u32` | IOSurface ID |
 | size | `(&self) → usize` | allocation in bytes |
 | drop | automatic | CFRelease |
@@ -81,8 +81,8 @@ MIL text builder. produces text consumed by `compile`.
 | from_text | `(mil, in_ch, in_sp, out_ch, out_sp) → Program` | custom MIL |
 | input_shape | `(&self) → (channels, spatial)` | input tensor dimensions |
 | output_shape | `(&self) → (channels, spatial)` | output tensor dimensions |
-| input_bytes | `(&self) → usize` | channels × spatial × 2 |
-| output_bytes | `(&self) → usize` | channels × spatial × 2 |
+| input_size | `(&self) → usize` | channels × spatial × 2 |
+| output_size | `(&self) → usize` | channels × spatial × 2 |
 | as_str | `(&self) → &str` | raw MIL text |
 
 ## conversion
@@ -93,8 +93,8 @@ fp16↔f32 conversion via inline NEON assembly (ARM64) with software fallback.
 |----------|-----------|-----------|
 | f32_to_fp16 | `(f32) → u16` | f32 → IEEE 754 half-precision |
 | fp16_to_f32 | `(u16) → f32` | IEEE 754 half-precision → f32 |
-| cvt_f32_f16 | `(&mut [u16], &[f32])` | bulk NEON-vectorized f32→fp16 |
-| cvt_f16_f32 | `(&mut [f32], &[u16])` | bulk NEON-vectorized fp16→f32 |
+| cast_f32_f16 | `(&mut [u16], &[f32])` | bulk NEON-vectorized f32→fp16 |
+| cast_f16_f32 | `(&mut [f32], &[u16])` | bulk NEON-vectorized fp16→f32 |
 
 ## blob
 
@@ -102,7 +102,7 @@ binary weight format for MIL `BLOBFILE` references.
 
 | function | signature | semantics |
 |----------|-----------|-----------|
-| build_weight_blob | `(&[u16]) → Vec<u8>` | wrap fp16 data with 128-byte header |
+| pack_weights | `(&[u16]) → Vec<u8>` | wrap fp16 data with 128-byte header |
 
 ### fp16 blob layout
 

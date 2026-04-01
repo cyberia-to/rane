@@ -1,11 +1,11 @@
 # surface lifecycle
 
-how to create, write, read, and release AneSurface buffers.
+how to create, write, read, and release Buffer buffers.
 
 ## create by size
 
 ```rust
-let surface = AneSurface::new(8192)?; // 8 KB
+let surface = Buffer::new(8192)?; // 8 KB
 ```
 
 ## create by tensor shape
@@ -13,15 +13,15 @@ let surface = AneSurface::new(8192)?; // 8 KB
 for a 4D tensor `[1, channels, 1, spatial]` in fp16:
 
 ```rust
-let surface = AneSurface::with_shape(64, 128)?; // 64 channels × 128 spatial × 2 bytes = 16 KB
+let surface = Buffer::with_shape(64, 128)?; // 64 channels × 128 spatial × 2 bytes = 16 KB
 ```
 
 ## write fp16 data
 
-surface must be locked before CPU access. `with_data_mut` handles lock/unlock:
+surface must be locked before CPU access. `write` handles lock/unlock:
 
 ```rust
-surface.with_data_mut(|data: &mut [u16]| {
+surface.write(|data: &mut [u16]| {
     for i in 0..data.len() {
         data[i] = f32_to_fp16(1.0);
     }
@@ -31,7 +31,7 @@ surface.with_data_mut(|data: &mut [u16]| {
 ## read fp16 data
 
 ```rust
-surface.with_data(|data: &[u16]| {
+surface.read(|data: &[u16]| {
     let first = fp16_to_f32(data[0]);
     println!("first element: {}", first);
 });
@@ -46,8 +46,8 @@ the same physical memory — no copies.
 model.run(&input_surface, &output_surface)?;
 ```
 
-**important:** do not hold a lock while ANE is running. `with_data` and
-`with_data_mut` lock and unlock automatically. calling `run()` between
+**important:** do not hold a lock while ANE is running. `read` and
+`write` lock and unlock automatically. calling `run()` between
 lock/unlock will deadlock.
 
 ## release
@@ -62,8 +62,8 @@ for large buffers, use vectorized NEON conversion:
 ```rust
 let f32_data: Vec<f32> = vec![1.0; 1024];
 let mut fp16_data: Vec<u16> = vec![0; 1024];
-rane::cvt_f32_f16(&mut fp16_data, &f32_data);
+rane::cast_f32_f16(&mut fp16_data, &f32_data);
 
 let mut back: Vec<f32> = vec![0.0; 1024];
-rane::cvt_f16_f32(&mut back, &fp16_data);
+rane::cast_f16_f32(&mut back, &fp16_data);
 ```

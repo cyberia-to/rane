@@ -70,7 +70,7 @@ all inference logic (attention blocks, transformer layers, model loading,
 op scheduling, graph optimization) belongs in the runtime layer
 (https://github.com/cyberia-to/cyb), not in the drivers.
 
-rane provides `mil::matmul`, `AneModel::compile`, `run_raw`. the runtime
+rane provides `mil::matmul`, `Program::compile`, `run_direct`. the runtime
 decides WHAT MIL programs to generate and WHEN to dispatch them.
 
 drivers expose raw capabilities. runtimes compose them.
@@ -93,12 +93,12 @@ cargo workspace with two members:
 
 ```
 src/                  core library (zero deps)
-  lib.rs              public API: AneModel, AneSurface, MilProgram, AneError
+  lib.rs              public API: Program, Buffer, Source, AneError
   main.rs             rane_probe — 7-level reverse engineering probe
   ffi.rs              IOKit, CoreFoundation, IOSurface, libobjc FFI
   accel.rs            Accelerate.framework FFI (cblas, vDSP, vecLib)
   surface.rs          IOSurface wrapper, inline NEON asm for fp16
-  model.rs            AneModel compile/load/run/unload via objc_msgSend
+  model.rs            Program compile/load/run/unload via objc_msgSend
   config.rs           ModelConfig presets (Qwen3-0.6B, Stories-110M)
   weights.rs          checkpoint I/O, LayerWeights, KVCache
   mil/                MIL program builder → ANE bytecode

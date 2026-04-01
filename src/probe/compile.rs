@@ -13,7 +13,7 @@ use std::ptr;
 /// Header format from training_dynamic/io.h build_blob():
 ///   byte 0: 1, byte 4: 2, bytes 64-67: 0xDEADBEEF, byte 68: 1
 ///   bytes 72-75: weight_size_bytes, bytes 80-83: 128 (data offset)
-pub(crate) fn build_weight_blob(fp16_data: &[u16]) -> Vec<u8> {
+pub(crate) fn pack_weights(fp16_data: &[u16]) -> Vec<u8> {
     let weight_bytes = fp16_data.len() * 2;
     let total = 128 + weight_bytes;
     let mut blob = vec![0u8; total];

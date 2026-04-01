@@ -23,26 +23,26 @@ rane = { path = "../rane" }  # or from crates.io when published
 ## step 2: write the program
 
 ```rust
-use rane::{MilProgram, AneSurface, AneModel, f32_to_fp16, fp16_to_f32};
+use rane::{Source, Buffer, Program, f32_to_fp16, fp16_to_f32};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // build a 64×64 matmul: y = x @ W
     let program = rane::mil::matmul(64, 64, 64);
 
     // compile MIL text → ANE bytecode
-    let mut model = AneModel::compile(&program, &[])?;
+    let mut model = Program::compile(&program, &[])?;
 
     // upload bytecode to ANE SRAM
     model.load()?;
 
     // allocate shared-memory surfaces (IOSurface-backed)
-    let input = AneSurface::new(program.input_bytes())?;
-    let output = AneSurface::new(program.output_bytes())?;
+    let input = Buffer::new(program.input_size())?;
+    let output = Buffer::new(program.output_size())?;
 
     // fill input: activations = 1.0, weights = identity matrix
     let (ic, sp) = program.input_shape();
     let seq = 64;
-    input.with_data_mut(|d| {
+    input.write(|d| {
         for ch in 0..ic {
             for s in 0..seq {
                 d[ch * sp + s] = f32_to_fp16(1.0);
@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     model.run(&input, &output)?;
 
     // read result
-    output.with_data(|d| {
+    output.read(|d| {
         let val = fp16_to_f32(d[0]);
         println!("output[0] = {}", val); // should be 1.0
     });
@@ -84,4 +84,4 @@ output[0] = 1
 2. `compile()` sent the MIL to `aned` daemon via XPC, which compiled it to ANE bytecode
 3. `load()` uploaded the bytecode to ANE SRAM
 4. `run()` dispatched the kernel on ANE hardware using IOSurface shared memory
-5. `with_data()` read the fp16 result directly from the IOSurface — zero copies
+5. `read()` read the fp16 result directly from the IOSurface — zero copies

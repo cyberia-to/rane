@@ -7,7 +7,7 @@
 //!
 //! Run: cargo run --release --example compare
 
-use rane::{AneModel, AneSurface};
+use rane::{Buffer, Program};
 use std::time::Instant;
 
 fn min_of(n: usize, f: impl Fn() -> f64) -> f64 {
@@ -36,11 +36,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         (1024, 1024, 256),
     ] {
         let p = rane::mil::matmul(ic, oc, seq);
-        let mut model = AneModel::compile(&p, &[]).unwrap();
+        let mut model = Program::compile(&p, &[]).unwrap();
         model.load().unwrap();
 
-        let input = AneSurface::new(p.input_bytes()).unwrap();
-        let output = AneSurface::new(p.output_bytes()).unwrap();
+        let input = Buffer::new(p.input_size()).unwrap();
+        let output = Buffer::new(p.output_size()).unwrap();
 
         // warmup
         for _ in 0..5 {
@@ -70,10 +70,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let t = Instant::now();
             for _ in 0..iters {
                 let p = rane::mil::matmul(ic, oc, seq);
-                let mut m = AneModel::compile(&p, &[]).unwrap();
+                let mut m = Program::compile(&p, &[]).unwrap();
                 m.load().unwrap();
-                let i = AneSurface::new(p.input_bytes()).unwrap();
-                let o = AneSurface::new(p.output_bytes()).unwrap();
+                let i = Buffer::new(p.input_size()).unwrap();
+                let o = Buffer::new(p.output_size()).unwrap();
                 m.run(&i, &o).unwrap();
             }
             t.elapsed().as_secs_f64() / iters as f64 * 1000.0

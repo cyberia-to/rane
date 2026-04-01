@@ -6,7 +6,7 @@
 //! Run: cargo run --example matmul
 
 use rane::mil;
-use rane::{f32_to_fp16, fp16_to_f32, AneModel, AneSurface};
+use rane::{f32_to_fp16, fp16_to_f32, Buffer, Program};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("ANE Matmul — Pure Rust\n");
@@ -23,16 +23,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  MIL: matmul({ic}x{oc}, seq={seq})");
     println!(
         "  Input:  [1, {in_ch}, 1, {in_sp}] fp16 ({} KB)",
-        program.input_bytes() / 1024
+        program.input_size() / 1024
     );
     println!(
         "  Output: [1, {out_ch}, 1, {out_sp}] fp16 ({} KB)\n",
-        program.output_bytes() / 1024
+        program.output_size() / 1024
     );
 
     // Compile
     print!("  Compiling...");
-    let mut model = AneModel::compile(&program, &[])?;
+    let mut model = Program::compile(&program, &[])?;
     println!(" OK");
 
     // Load into ANE
@@ -41,11 +41,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(" OK");
 
     // Prepare I/O surfaces
-    let input = AneSurface::new(program.input_bytes())?;
-    let output = AneSurface::new(program.output_bytes())?;
+    let input = Buffer::new(program.input_size())?;
+    let output = Buffer::new(program.output_size())?;
 
     // Fill input: activations = 1.0, weights = identity matrix
-    input.with_data_mut(|data| {
+    input.write(|data| {
         for ch in 0..ic {
             for s in 0..seq {
                 data[ch * in_sp + s] = f32_to_fp16(1.0);
@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(" OK\n");
 
     // Read output
-    output.with_data(|data| {
+    output.read(|data| {
         print!("  Output[0..8] = [");
         for i in 0..8 {
             if i > 0 {

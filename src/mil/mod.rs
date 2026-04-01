@@ -10,7 +10,7 @@ const MIL_BUILD_INFO: &str = concat!(
 );
 
 /// A MIL program ready for ANE compilation.
-pub struct MilProgram {
+pub struct Source {
     pub text: String,
     pub input_channels: usize,
     pub input_spatial: usize,
@@ -18,7 +18,7 @@ pub struct MilProgram {
     pub output_spatial: usize,
 }
 
-impl MilProgram {
+impl Source {
     pub fn as_str(&self) -> &str {
         &self.text
     }
@@ -28,10 +28,10 @@ impl MilProgram {
     pub fn output_shape(&self) -> (usize, usize) {
         (self.output_channels, self.output_spatial)
     }
-    pub fn input_bytes(&self) -> usize {
+    pub fn input_size(&self) -> usize {
         self.input_channels * self.input_spatial * 2
     }
-    pub fn output_bytes(&self) -> usize {
+    pub fn output_size(&self) -> usize {
         self.output_channels * self.output_spatial * 2
     }
 }
@@ -84,12 +84,12 @@ pub fn gen_dyn_matmul(
 }
 
 /// Build a simple dynamic matmul MIL: y = x @ W
-pub fn matmul(ic: usize, oc: usize, seq: usize) -> MilProgram {
+pub fn matmul(ic: usize, oc: usize, seq: usize) -> Source {
     let sp = seq + oc;
     let mut m = mil_header(ic, sp);
     gen_dyn_matmul(&mut m, "mm", ic, oc, seq, 0, seq, "x");
     m += &mil_footer("mm_y");
-    MilProgram {
+    Source {
         text: m,
         input_channels: ic,
         input_spatial: sp,
@@ -99,7 +99,7 @@ pub fn matmul(ic: usize, oc: usize, seq: usize) -> MilProgram {
 }
 
 /// Build an ANE weight blob: 128-byte header + fp16 data.
-pub fn build_weight_blob(fp16_data: &[u16]) -> Vec<u8> {
+pub fn pack_weights(fp16_data: &[u16]) -> Vec<u8> {
     let weight_bytes = fp16_data.len() * 2;
     let total = 128 + weight_bytes;
     let mut blob = vec![0u8; total];

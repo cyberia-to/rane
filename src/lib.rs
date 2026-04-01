@@ -6,14 +6,14 @@
 //! # Example
 //!
 //! ```no_run
-//! use rane::{AneModel, AneSurface};
+//! use rane::{Program, Buffer};
 //!
 //! let program = rane::mil::matmul(64, 64, 64);
-//! let mut model = AneModel::compile(&program, &[])?;
+//! let mut model = Program::compile(&program, &[])?;
 //! model.load()?;
 //!
-//! let input = AneSurface::new(program.input_bytes())?;
-//! let output = AneSurface::new(program.output_bytes())?;
+//! let input = Buffer::new(program.input_size())?;
+//! let output = Buffer::new(program.output_size())?;
 //! model.run(&input, &output)?;
 //! # Ok::<(), rane::AneError>(())
 //! ```
@@ -21,12 +21,12 @@
 //! # Architecture
 //!
 //! ```text
-//! MIL text → AneModel::compile() → load() → run() → unload()
+//! MIL text → Program::compile() → load() → run() → unload()
 //!   ↓              ↓                  ↓        ↓
 //!   MIL         aned XPC           ANE SRAM  IOSurface I/O
 //! ```
 //!
-//! All data passes through [`AneSurface`] — IOSurface-backed shared memory
+//! All data passes through [`Buffer`] — IOSurface-backed shared memory
 //! with zero copies between CPU and ANE. Tensor data is fp16.
 
 #![allow(
@@ -45,13 +45,13 @@ pub mod mil;
 pub mod model;
 pub mod surface;
 
-pub use mil::{build_weight_blob, gen_dyn_matmul, mil_footer, mil_header, MilProgram};
-pub use model::AneModel;
-pub use surface::AneSurface;
+pub use mil::{gen_dyn_matmul, mil_footer, mil_header, pack_weights, Source};
+pub use model::Program;
+pub use surface::Buffer;
 
 // Re-export fp16 from acpu (single source of truth for numeric conversions)
-pub use acpu::{cvt_f16_f32, cvt_f32_f16};
-pub use acpu::numeric::fp16::{fp16_to_f32, f32_to_fp16};
+pub use acpu::numeric::fp16::{f32_to_fp16, fp16_to_f32};
+pub use acpu::{cast_f16_f32, cast_f32_f16};
 
 // Re-export Block from unimem (single source of truth for IOSurface memory)
 pub use unimem::Block;

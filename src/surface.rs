@@ -9,12 +9,12 @@ use std::ptr;
 
 /// A shared-memory tensor buffer backed by IOSurface.
 /// Used to pass fp16 data to/from the Apple Neural Engine.
-pub struct AneSurface {
+pub struct Buffer {
     raw: IOSurfaceRef,
     size: usize,
 }
 
-impl AneSurface {
+impl Buffer {
     /// Maximum surface size: 256 MB (ANE practical limit).
     const MAX_SURFACE_BYTES: usize = 256 * 1024 * 1024;
 
@@ -53,7 +53,7 @@ impl AneSurface {
                 return Err(AneError::SurfaceCreationFailed(format!("{} bytes", bytes)));
             }
             let size = IOSurfaceGetAllocSize(raw);
-            Ok(AneSurface { raw, size })
+            Ok(Buffer { raw, size })
         }
     }
 
@@ -63,7 +63,7 @@ impl AneSurface {
     }
 
     /// Lock surface, call closure with mutable fp16 slice, unlock.
-    pub fn with_data_mut<F, R>(&self, f: F) -> R
+    pub fn write<F, R>(&self, f: F) -> R
     where
         F: FnOnce(&mut [u16]) -> R,
     {
@@ -79,7 +79,7 @@ impl AneSurface {
     }
 
     /// Lock surface (read-only), call closure with fp16 slice, unlock.
-    pub fn with_data<F, R>(&self, f: F) -> R
+    pub fn read<F, R>(&self, f: F) -> R
     where
         F: FnOnce(&[u16]) -> R,
     {
@@ -110,7 +110,7 @@ impl AneSurface {
     }
 }
 
-impl Drop for AneSurface {
+impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe {
             CFRelease(self.raw as CFTypeRef);
@@ -118,5 +118,5 @@ impl Drop for AneSurface {
     }
 }
 
-// fp16 conversion functions: use acpu::{fp16_to_f32, f32_to_fp16, cvt_f16_f32, cvt_f32_f16}
+// fp16 conversion functions: use acpu::{fp16_to_f32, f32_to_fp16, cast_f16_f32, cast_f32_f16}
 // Re-exported from acpu via lib.rs — single source of truth.

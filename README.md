@@ -9,14 +9,14 @@ compiler. no Swift. no CoreML. no Python. no dependencies.
 compile a MIL program, load it into ANE SRAM, dispatch, read the output.
 
 ```rust,ignore
-use rane::{AneModel, AneSurface};
+use rane::{Program, Buffer};
 
 let program = rane::mil::matmul(64, 64, 64);
-let mut model = AneModel::compile(&program, &[]).unwrap();
+let mut model = Program::compile(&program, &[]).unwrap();
 model.load().unwrap();
 
-let input = AneSurface::new(program.input_bytes()).unwrap();
-let output = AneSurface::new(program.output_bytes()).unwrap();
+let input = Buffer::new(program.input_size()).unwrap();
+let output = Buffer::new(program.output_size()).unwrap();
 model.run(&input, &output).unwrap();
 ```
 
@@ -82,32 +82,32 @@ three barriers. three bypasses:
 
 ```rust,ignore
 // compile MIL to ANE bytecode
-AneModel::compile(program: &MilProgram, weights: &[(&str, &[u8])]) -> Result<Self>
+Program::compile(program: &Source, weights: &[(&str, &[u8])]) -> Result<Self>
 
 // upload bytecode to ANE SRAM
 model.load() -> Result<()>
 
 // dispatch on hardware (synchronous)
-model.run(input: &AneSurface, output: &AneSurface) -> Result<()>
+model.run(input: &Buffer, output: &Buffer) -> Result<()>
 
 // free SRAM (also automatic on drop)
 model.unload() -> Result<()>
 
 // shared-memory tensor buffer (IOSurface)
-AneSurface::new(bytes) -> Result<Self>
-AneSurface::with_shape(channels, spatial) -> Result<Self>
-surface.with_data(|&[u16]|)
-surface.with_data_mut(|&mut [u16]|)
+Buffer::new(bytes) -> Result<Self>
+Buffer::with_shape(channels, spatial) -> Result<Self>
+surface.read(|&[u16]|)
+surface.write(|&mut [u16]|)
 
 // MIL program builder
-rane::mil::matmul(ic, oc, seq) -> MilProgram
-MilProgram::from_text(text, in_ch, in_sp, out_ch, out_sp) -> Self
+rane::mil::matmul(ic, oc, seq) -> Source
+Source::from_text(text, in_ch, in_sp, out_ch, out_sp) -> Self
 
 // fp16 conversion (NEON-accelerated)
 rane::f32_to_fp16(f32) -> u16
 rane::fp16_to_f32(u16) -> f32
-rane::cvt_f32_f16(&mut [u16], &[f32])  // bulk NEON
-rane::cvt_f16_f32(&mut [f32], &[u16])  // bulk NEON
+rane::cast_f32_f16(&mut [u16], &[f32])  // bulk NEON
+rane::cast_f16_f32(&mut [f32], &[u16])  // bulk NEON
 ```
 
 ## build
@@ -126,7 +126,7 @@ two crates. the core library has zero external dependencies.
 
 ```
 src/                    rane crate — zero deps, system frameworks only
-  lib.rs                AneModel, AneSurface, MilProgram, AneError
+  lib.rs                Program, Buffer, Source, AneError
   model.rs              compile / load / run / unload
   surface.rs            IOSurface wrapper, NEON fp16
   ffi.rs                IOKit, CoreFoundation, IOSurface, libobjc

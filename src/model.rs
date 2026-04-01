@@ -1,28 +1,28 @@
-//! AneModel: compile MIL, load into ANE, run on hardware, unload
+//! Program: compile MIL, load into ANE, run on hardware, unload
 
 use crate::ffi::*;
-use crate::mil::MilProgram;
-use crate::surface::AneSurface;
+use crate::mil::Source;
+use crate::surface::Buffer;
 use crate::AneError;
 use std::ffi::{c_char, c_void, CStr};
 use std::path::PathBuf;
 use std::ptr;
 
 /// A compiled ANE model that can be loaded and evaluated on hardware.
-pub struct AneModel {
+pub struct Program {
     objc_model: ObjcId,
     empty_dict: ObjcId,
     loaded: bool,
     tmp_dir: PathBuf,
 }
 
-impl AneModel {
+impl Program {
     /// Compile a MIL program into ANE bytecode.
     ///
     /// `weights` is a slice of `(path, fp16_data)` pairs where path follows
     /// the `@model_path/weights/filename.bin` convention.
     /// For models without external weights (e.g. dynamic matmul), pass `&[]`.
-    pub fn compile(program: &MilProgram, weights: &[(&str, &[u8])]) -> Result<Self, AneError> {
+    pub fn compile(program: &Source, weights: &[(&str, &[u8])]) -> Result<Self, AneError> {
         // Ensure AppleNeuralEngine.framework is loaded
         load_ane_frameworks();
 
@@ -123,7 +123,7 @@ impl AneModel {
                 return Err(AneError::CompilationFailed(msg));
             }
 
-            Ok(AneModel {
+            Ok(Program {
                 objc_model: model,
                 empty_dict,
                 loaded: false,
@@ -155,19 +155,23 @@ impl AneModel {
     }
 
     /// Run the model on ANE hardware.
-    /// Input and output must be `AneSurface` with correct sizes for the MIL program.
-    pub fn run(&self, input: &AneSurface, output: &AneSurface) -> Result<(), AneError> {
-        unsafe { self.run_raw(input.as_raw(), output.as_raw()) }
+    /// Input and output must be `Buffer` with correct sizes for the MIL program.
+    pub fn run(&self, input: &Buffer, output: &Buffer) -> Result<(), AneError> {
+        unsafe { self.run_direct(input.as_raw(), output.as_raw()) }
     }
 
     /// Run the model on ANE with raw IOSurfaceRef handles.
     ///
     /// Use this to pass IOSurfaces from external allocators (e.g. cyb-mem)
-    /// without wrapping them in AneSurface. Zero-copy path.
+    /// without wrapping them in Buffer. Zero-copy path.
     ///
     /// # Safety
     /// Both IOSurfaceRef must be valid, locked, and sized correctly for the MIL program.
-    pub unsafe fn run_raw(&self, input: IOSurfaceRef, output: IOSurfaceRef) -> Result<(), AneError> {
+    pub unsafe fn run_direct(
+        &self,
+        input: IOSurfaceRef,
+        output: IOSurfaceRef,
+    ) -> Result<(), AneError> {
         if !self.loaded {
             return Err(AneError::EvalFailed("Model not loaded".into()));
         }
@@ -215,7 +219,7 @@ impl AneModel {
     }
 }
 
-impl Drop for AneModel {
+impl Drop for Program {
     fn drop(&mut self) {
         let _ = self.unload();
         let _ = std::fs::remove_dir_all(&self.tmp_dir);
