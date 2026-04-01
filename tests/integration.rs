@@ -93,3 +93,109 @@ fn mil_matmul_text_is_valid() {
     assert!(text.contains("func main"));
     assert!(text.contains("matmul"));
 }
+
+// ── pack_weights tests ──
+
+#[test]
+fn pack_weights_length_and_header() {
+    let data: Vec<u16> = (0..128).collect();
+    let blob = rane::pack_weights(&data);
+
+    // output length = 128-byte header + input_bytes
+    let input_bytes = data.len() * 2;
+    assert_eq!(blob.len(), 128 + input_bytes);
+
+    // magic at 0x40..0x44 = 0xDEADBEEF (little-endian)
+    assert_eq!(blob[0x40], 0xEF);
+    assert_eq!(blob[0x41], 0xBE);
+    assert_eq!(blob[0x42], 0xAD);
+    assert_eq!(blob[0x43], 0xDE);
+
+    // dtype at 0x44 = 1 (fp16)
+    assert_eq!(blob[0x44], 1);
+
+    // data after header matches input
+    for (i, &val) in data.iter().enumerate() {
+        let off = 128 + i * 2;
+        let stored = u16::from_le_bytes([blob[off], blob[off + 1]]);
+        assert_eq!(stored, val, "mismatch at index {}", i);
+    }
+}
+
+#[test]
+fn pack_weights_empty() {
+    let blob = rane::pack_weights(&[]);
+    assert_eq!(blob.len(), 128);
+}
+
+// ── mil_header / mil_footer / gen_dyn_matmul tests ──
+
+#[test]
+fn mil_header_contains_keywords() {
+    let h = rane::mil_header(64, 128);
+    assert!(!h.is_empty());
+    assert!(h.contains("program(1.3)"));
+    assert!(h.contains("func main"));
+    assert!(h.contains("fp16"));
+    assert!(h.contains("[1, 64, 1, 128]"));
+}
+
+#[test]
+fn mil_footer_contains_closing() {
+    let f = rane::mil_footer("out_var");
+    assert!(!f.is_empty());
+    assert!(f.contains("out_var"));
+    assert!(f.contains("}"));
+}
+
+#[test]
+fn gen_dyn_matmul_produces_mil_ops() {
+    let mut m = String::new();
+    rane::gen_dyn_matmul(&mut m, "test", 32, 16, 8, 0, 8, "x");
+    assert!(!m.is_empty());
+    assert!(m.contains("matmul"));
+    assert!(m.contains("slice_by_size"));
+    assert!(m.contains("reshape"));
+    assert!(m.contains("transpose"));
+    assert!(m.contains("test_y"));
+}
+
+// ── AneError Display tests ──
+
+#[test]
+fn ane_error_display_variants() {
+    use rane::AneError;
+
+    let variants: Vec<AneError> = vec![
+        AneError::SurfaceCreationFailed("test".into()),
+        AneError::ClassNotFound("TestClass"),
+        AneError::DescriptorCreationFailed,
+        AneError::ModelCreationFailed,
+        AneError::CompilationFailed("bad mil".into()),
+        AneError::LoadFailed("no ane".into()),
+        AneError::EvalFailed("shape mismatch".into()),
+        AneError::UnloadFailed("busy".into()),
+        AneError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "missing")),
+    ];
+
+    for v in &variants {
+        let s = format!("{}", v);
+        assert!(!s.is_empty(), "Display for {:?} was empty", v);
+    }
+}
+
+// ── Error path tests ──
+
+#[test]
+fn buffer_zero_size_is_err() {
+    assert!(Buffer::new(0).is_err());
+}
+
+#[test]
+fn buffer_oversized_is_err() {
+    // 512 MB > 256 MB limit
+    assert!(Buffer::new(512 * 1024 * 1024).is_err());
+}
+
+// ── Source has no from_text constructor ──
+// Source only has matmul() as a public constructor; no from_text exists.

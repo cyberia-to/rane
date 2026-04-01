@@ -102,3 +102,49 @@ fn matmul_various_sizes() {
         model.run(&input, &output).unwrap();
     }
 }
+
+#[test]
+fn run_direct_with_raw_surfaces() {
+    let _g = ANE_LOCK.lock().unwrap();
+    let ic = 64;
+    let oc = 64;
+    let seq = 64;
+    let p = rane::mil::matmul(ic, oc, seq);
+
+    let mut model = Program::compile(&p, &[]).unwrap();
+    model.load().unwrap();
+
+    let input = Buffer::new(p.input_size()).unwrap();
+    let output = Buffer::new(p.output_size()).unwrap();
+
+    // Fill input: identity weight matrix, all-ones activations
+    input.write(|d| {
+        let sp = seq + oc;
+        for ch in 0..ic {
+            for s in 0..seq {
+                d[ch * sp + s] = f32_to_fp16(1.0);
+            }
+            for o in 0..oc {
+                d[ch * sp + seq + o] = if ch == o { f32_to_fp16(1.0) } else { 0 };
+            }
+        }
+    });
+
+    // Use run_direct with raw IOSurface refs
+    unsafe {
+        model.run_direct(input.as_raw(), output.as_raw()).unwrap();
+    }
+
+    output.read(|d| {
+        let mut max_err: f32 = 0.0;
+        for i in 0..oc * seq {
+            let val = fp16_to_f32(d[i]);
+            max_err = max_err.max((val - 1.0).abs());
+        }
+        assert!(
+            max_err < 0.01,
+            "run_direct identity matmul max_err = {}",
+            max_err
+        );
+    });
+}

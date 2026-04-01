@@ -94,8 +94,8 @@ impl Buffer {
         }
     }
 
-    /// Get the raw IOSurfaceRef for passing to ObjC wrappers.
-    pub(crate) fn as_raw(&self) -> IOSurfaceRef {
+    /// Get the raw IOSurfaceRef for passing to `Program::run_direct()`.
+    pub fn as_raw(&self) -> IOSurfaceRef {
         self.raw
     }
 

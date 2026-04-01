@@ -53,8 +53,8 @@ pub use surface::Buffer;
 pub use acpu::numeric::fp16::{f32_to_fp16, fp16_to_f32};
 pub use acpu::{cast_f16_f32, cast_f32_f16};
 
-// Re-export Block from unimem (single source of truth for IOSurface memory)
-pub use unimem::Block;
+// Memory foundation — re-export for single-import convenience
+pub use unimem::{Block, Layout, MemError, Tape};
 
 /// Errors from ANE driver operations.
 #[derive(Debug)]
