@@ -2,3 +2,4 @@
 *.bin
 *.ckpt
 .DS_Store
+mutants.out/
